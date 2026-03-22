@@ -80,6 +80,7 @@ target("ConsoleDebuggerTests")
 
     add_files(
         "src/config/Settings.cpp",
+        "src/writeback/OutboxPath.cpp",
         "tests/**.cpp"
     )
 

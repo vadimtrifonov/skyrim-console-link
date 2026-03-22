@@ -1,6 +1,8 @@
 #include "runtime/Runtime.h"
 
+#include "logging/ConsoleActivityLog.h"
 #include "pch.h"
+#include "writeback/WriteBackService.h"
 
 namespace
 {
@@ -18,7 +20,7 @@ namespace
 
 namespace Runtime
 {
-	void Initialize(const Config::Settings& settings)
+	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath)
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
@@ -27,12 +29,15 @@ namespace Runtime
 			settings.enableConsoleOutputLogging,
 			settings.enableConsoleWriteBack);
 
+		Logging::InitializeConsoleActivityLog(settings);
+
 		if (!REL::Module::IsVR()) {
 			logs::warn(
 				"ConsoleDebugger is currently scaffolding a VR-first implementation; runtime-specific hook sites are not verified for {} yet",
 				GetRuntimeName());
 		}
 
-		logs::info("No observational hooks or write-back loop are installed in this scaffold build");
+		WriteBack::Initialize(settings, outboxPath);
+		logs::info("Observational console hooks are not installed in this build");
 	}
 }

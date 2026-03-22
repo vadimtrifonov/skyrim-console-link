@@ -2,7 +2,9 @@
 
 #include "config/Settings.h"
 
+#include <filesystem>
+
 namespace Runtime
 {
-	void Initialize(const Config::Settings& settings);
+	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
 }

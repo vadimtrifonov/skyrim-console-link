@@ -16,7 +16,7 @@ namespace Config
 		bool mirrorToSeparateConsoleLog = true;
 		bool includeTimestamps = true;
 
-		std::filesystem::path outboxPath = L"Data/SKSE/Plugins/ConsoleDebugger.outbox.txt";
+		std::filesystem::path outboxPath = L"ConsoleDebugger.outbox.txt";
 		std::uint32_t         maxLinesPerTick = 8;
 
 		bool traceHookInstall = false;
@@ -29,6 +29,8 @@ namespace Config
 	};
 
 	[[nodiscard]] std::filesystem::path GetDefaultSettingsPath();
+	[[nodiscard]] std::filesystem::path GetDefaultOutboxPath();
+	[[nodiscard]] Settings              GetBuiltInDefaults();
 	[[nodiscard]] LoadResult            LoadSettingsWithDiagnostics(const std::filesystem::path& path);
 	[[nodiscard]] Settings              LoadSettings(const std::filesystem::path& path);
 	[[nodiscard]] Settings              LoadDefaultSettings();
