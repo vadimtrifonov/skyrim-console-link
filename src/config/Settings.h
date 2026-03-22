@@ -14,7 +14,6 @@ namespace Config
 		bool enableConsoleDisplay = true;
 		bool enableConsoleCommandSubmission = true;
 
-		bool mirrorToSeparateConsoleLog = true;
 		bool includeTimestamps = true;
 
 		std::filesystem::path outboxPath = L"ConsoleLink.outbox.txt";

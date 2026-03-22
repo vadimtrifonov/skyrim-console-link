@@ -40,12 +40,11 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} display={} command_submission={} separate_console_log={} timestamps={}",
+			"Config input_logging={} output_logging={} display={} command_submission={} timestamps={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
 			loadResult.settings.enableConsoleDisplay,
 			loadResult.settings.enableConsoleCommandSubmission,
-			loadResult.settings.mirrorToSeparateConsoleLog,
 			loadResult.settings.includeTimestamps);
 
 		const auto configuredOutboxPath = loadResult.settings.outboxPath;

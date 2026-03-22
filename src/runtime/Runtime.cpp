@@ -58,7 +58,9 @@ namespace Runtime
 			settings.enableConsoleDisplay,
 			settings.enableConsoleCommandSubmission);
 
-		Logging::InitializeConsoleActivityLog(settings);
+		if (const auto error = Logging::InitializeConsoleActivityLog(settings)) {
+			SKSE::stl::report_and_fail(*error);
+		}
 		InitializeCaptureTrampoline(settings);
 
 		if (!REL::Module::IsVR()) {

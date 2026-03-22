@@ -296,7 +296,6 @@ namespace Config
 		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
 		applyBool({ { L"Main", L"EnableConsoleDisplay" } }, &Settings::enableConsoleDisplay);
 		applyBool({ { L"Main", L"EnableConsoleCommandSubmission" } }, &Settings::enableConsoleCommandSubmission);
-		applyBool({ { L"Logging", L"MirrorToSeparateConsoleLog" } }, &Settings::mirrorToSeparateConsoleLog);
 		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
 		applyPath(
 			{ { L"Display", L"OutboxPath" } },

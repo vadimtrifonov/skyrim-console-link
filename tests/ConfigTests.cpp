@@ -47,7 +47,6 @@ namespace
 		Expect(result.settings.enableConsoleOutputLogging == defaults.enableConsoleOutputLogging, "default output logging should be enabled");
 		Expect(result.settings.enableConsoleDisplay == defaults.enableConsoleDisplay, "default display should be enabled");
 		Expect(result.settings.enableConsoleCommandSubmission == defaults.enableConsoleCommandSubmission, "default command submission mismatch");
-		Expect(result.settings.mirrorToSeparateConsoleLog == defaults.mirrorToSeparateConsoleLog, "default separate console log should be enabled");
 		Expect(result.settings.includeTimestamps == defaults.includeTimestamps, "default timestamps should be enabled");
 		Expect(result.settings.outboxPath == defaults.outboxPath, "default outbox path mismatch");
 		Expect(result.settings.maxDisplayLinesPerTick == defaults.maxDisplayLinesPerTick, "default max display lines per tick mismatch");
@@ -69,7 +68,6 @@ namespace
 			"EnableConsoleCommandSubmission = true\n"
 			"\n"
 			"[Logging]\n"
-			"MirrorToSeparateConsoleLog = false\n"
 			"IncludeTimestamps = 0\n"
 			"\n"
 			"[Display]\n"
@@ -89,7 +87,6 @@ namespace
 		Expect(!result.settings.enableConsoleOutputLogging, "override output logging mismatch");
 		Expect(!result.settings.enableConsoleDisplay, "override display mismatch");
 		Expect(result.settings.enableConsoleCommandSubmission, "override command submission mismatch");
-		Expect(!result.settings.mirrorToSeparateConsoleLog, "override separate console log mismatch");
 		Expect(!result.settings.includeTimestamps, "override timestamps mismatch");
 		Expect(result.settings.outboxPath == std::filesystem::path(L"Alt.outbox.txt"), "override outbox path mismatch");
 		Expect(result.settings.maxDisplayLinesPerTick == 3, "override max display lines per tick mismatch");

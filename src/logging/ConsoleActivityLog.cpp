@@ -42,8 +42,6 @@ namespace
 
 		try {
 			const auto record = BuildRecord(channel, line);
-			logs::info("{}", record);
-
 			std::shared_ptr<spdlog::logger> logger;
 			{
 				std::scoped_lock lock(g_consoleLogLock);
@@ -63,21 +61,17 @@ namespace
 
 namespace Logging
 {
-	void InitializeConsoleActivityLog(const Config::Settings& settings)
+	std::optional<std::string> InitializeConsoleActivityLog(const Config::Settings& settings)
 	{
 		std::scoped_lock lock(g_consoleLogLock);
 		g_consoleActivityLogger.reset();
 		g_consoleActivityDisabled = false;
 		g_consoleActivityFailureLogged = false;
 
-		if (!settings.mirrorToSeparateConsoleLog) {
-			return;
-		}
-
 		auto logPath = logs::log_directory();
 		if (!logPath) {
-			logs::warn("Could not resolve the standard SKSE log directory for the console activity log");
-			return;
+			g_consoleActivityDisabled = true;
+			return "Could not resolve the standard SKSE log directory for the console activity log";
 		}
 
 		*logPath /= "ConsoleLink.console.log";
@@ -90,8 +84,13 @@ namespace Logging
 			logger->set_pattern(settings.includeTimestamps ? "[%Y-%m-%d %H:%M:%S.%e] %v" : "%v");
 			g_consoleActivityLogger = std::move(logger);
 			logs::info("Console activity log: {}", logPath->string());
+			return std::nullopt;
 		} catch (const std::exception& exception) {
-			logs::warn("Failed to initialize console activity log at {}: {}", logPath->string(), exception.what());
+			g_consoleActivityDisabled = true;
+			return "Failed to initialize console activity log at " + logPath->string() + ": " + exception.what();
+		} catch (...) {
+			g_consoleActivityDisabled = true;
+			return "Failed to initialize console activity log at " + logPath->string() + ": unknown exception";
 		}
 	}
 
