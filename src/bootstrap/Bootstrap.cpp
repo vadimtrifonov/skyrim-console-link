@@ -24,7 +24,7 @@ namespace Bootstrap
 {
 	void Initialize()
 	{
-		logs::info("Initializing ConsoleDebugger on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
+		logs::info("Initializing ConsoleLink on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
 
 		const auto settingsPath = Config::GetDefaultSettingsPath();
 		const auto settingsExists = std::filesystem::exists(settingsPath);
@@ -97,3 +97,4 @@ namespace Bootstrap
 		Runtime::Initialize(loadResult.settings, runtimeOutboxPath, runtimeInboxPath);
 	}
 }
+

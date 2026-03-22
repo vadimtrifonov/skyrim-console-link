@@ -63,7 +63,7 @@ namespace Runtime
 
 		if (!REL::Module::IsVR()) {
 			logs::warn(
-				"ConsoleDebugger is currently scaffolding a VR-first implementation; runtime-specific hook sites are not verified for {} yet",
+				"ConsoleLink is currently scaffolding a VR-first implementation; runtime-specific hook sites are not verified for {} yet",
 				GetRuntimeName());
 		}
 
@@ -73,3 +73,4 @@ namespace Runtime
 		Command::Initialize(settings, inboxPath);
 	}
 }
+

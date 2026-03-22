@@ -17,9 +17,9 @@ namespace Config
 		bool mirrorToSeparateConsoleLog = true;
 		bool includeTimestamps = true;
 
-		std::filesystem::path outboxPath = L"ConsoleDebugger.outbox.txt";
+		std::filesystem::path outboxPath = L"ConsoleLink.outbox.txt";
 		std::uint32_t         maxDisplayLinesPerTick = 8;
-		std::filesystem::path inboxPath = L"ConsoleDebugger.inbox.txt";
+		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
 		std::uint32_t         maxCommandsPerTick = 4;
 
 		bool traceHookInstall = false;
@@ -39,3 +39,4 @@ namespace Config
 	[[nodiscard]] Settings              LoadSettings(const std::filesystem::path& path);
 	[[nodiscard]] Settings              LoadDefaultSettings();
 }
+

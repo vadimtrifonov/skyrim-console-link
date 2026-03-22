@@ -20,8 +20,8 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build.ps1"
 $xmakeFile = Join-Path $repoRoot "xmake.lua"
-$pluginName = "ConsoleDebugger"
-$archiveStem = "ConsoleDebugger"
+$pluginName = "ConsoleLink"
+$archiveStem = "ConsoleLink"
 $buildRoot = Join-Path $repoRoot "build/windows/x64/$Mode"
 $distRoot = Join-Path $repoRoot "dist"
 $artifactsRoot = Join-Path $repoRoot "artifacts"
@@ -117,7 +117,7 @@ if ($IncludePdb) {
 Compress-Archive -Path (Join-Path $stageModRoot "*") -DestinationPath $archivePath -CompressionLevel Optimal
 
 if (-not $Quiet) {
-    Write-Host "Packaged ConsoleDebugger:" -ForegroundColor Cyan
+    Write-Host "Packaged ConsoleLink:" -ForegroundColor Cyan
     Write-Host "  mode:         $Mode"
     Write-Host "  version:      $Version"
     if ($versionIsPlaceholder -and $commitSuffix) {
@@ -126,3 +126,4 @@ if (-not $Quiet) {
     Write-Host "  stage root:   $stageModRoot"
     Write-Host "  archive:      $archivePath"
 }
+

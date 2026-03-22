@@ -13,7 +13,7 @@ namespace
 			SKSE::stl::report_and_fail("Failed to resolve the standard SKSE log directory.");
 		}
 
-		*path /= "ConsoleDebugger.log";
+		*path /= "ConsoleLink.log";
 
 		std::vector<spdlog::sink_ptr> sinks;
 		sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
@@ -40,18 +40,19 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 {
 	try {
 		const auto logPath = InitializeLog();
-		logs::info("===== ConsoleDebugger start =====");
+		logs::info("===== ConsoleLink start =====");
 		logs::info("Log file: {}", logPath.string());
 		SKSE::Init(a_skse);
 		Bootstrap::Initialize();
 
-		logs::info("ConsoleDebugger loaded");
+		logs::info("ConsoleLink loaded");
 		return true;
 	} catch (const std::exception& exception) {
-		logs::critical("ConsoleDebugger failed to load: {}", exception.what());
+		logs::critical("ConsoleLink failed to load: {}", exception.what());
 	} catch (...) {
-		logs::critical("ConsoleDebugger failed to load with an unknown exception");
+		logs::critical("ConsoleLink failed to load with an unknown exception");
 	}
 
 	return false;
 }
+

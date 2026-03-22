@@ -80,7 +80,7 @@ namespace Logging
 			return;
 		}
 
-		*logPath /= "ConsoleDebugger.console.log";
+		*logPath /= "ConsoleLink.console.log";
 
 		try {
 			auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logPath->string(), true);
@@ -115,3 +115,4 @@ namespace Logging
 		LogConsoleActivityLine("console-display", line);
 	}
 }
+

@@ -5,7 +5,7 @@
 
 namespace
 {
-	constexpr auto kLegacyDefaultOutboxPath = L"Data/SKSE/Plugins/ConsoleDebugger.outbox.txt";
+	constexpr auto kLegacyDefaultOutboxPath = L"Data/SKSE/Plugins/ConsoleLink.outbox.txt";
 }
 
 namespace Display
@@ -36,3 +36,4 @@ namespace Display
 		return result;
 	}
 }
+

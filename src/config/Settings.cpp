@@ -218,17 +218,17 @@ namespace Config
 {
 	std::filesystem::path GetDefaultSettingsPath()
 	{
-		return L"Data/SKSE/Plugins/ConsoleDebugger.ini";
+		return L"Data/SKSE/Plugins/ConsoleLink.ini";
 	}
 
 	std::filesystem::path GetDefaultOutboxPath()
 	{
-		return L"ConsoleDebugger.outbox.txt";
+		return L"ConsoleLink.outbox.txt";
 	}
 
 	std::filesystem::path GetDefaultInboxPath()
 	{
-		return L"ConsoleDebugger.inbox.txt";
+		return L"ConsoleLink.inbox.txt";
 	}
 
 	Settings GetBuiltInDefaults()
@@ -325,3 +325,4 @@ namespace Config
 		return LoadSettings(GetDefaultSettingsPath());
 	}
 }
+

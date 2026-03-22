@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build.ps1"
-$pluginName = "ConsoleDebugger"
+$pluginName = "ConsoleLink"
 $pluginFile = "$pluginName.dll"
 $pdbFile = "$pluginName.pdb"
 $iniFile = "$pluginName.ini"
@@ -70,7 +70,7 @@ if ($OverwriteIni -or -not $targetIniExisted) {
 }
 
 if (-not $Quiet) {
-    Write-Host "Deployed ConsoleDebugger:" -ForegroundColor Cyan
+    Write-Host "Deployed ConsoleLink:" -ForegroundColor Cyan
     Write-Host "  target:       $targetRootPath"
     Write-Host "  mode:         $Mode"
     Write-Host "  dll:          $targetDll"
@@ -80,3 +80,4 @@ if (-not $Quiet) {
     Write-Host "  ini:          $targetIni"
     Write-Host "  ini updated:  $($OverwriteIni -or -not $targetIniExisted)"
 }
+

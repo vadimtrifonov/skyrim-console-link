@@ -15,7 +15,7 @@ end
 
 includes(commonlib_root)
 
-set_project("ConsoleDebugger")
+set_project("ConsoleLink")
 set_version("0.0.0")
 set_license("Apache-2.0")
 set_languages("c++23")
@@ -52,12 +52,12 @@ local function apply_project_warnings()
     )
 end
 
-target("ConsoleDebugger")
+target("ConsoleLink")
     add_deps("commonlibsse-ng")
 
     add_rules("commonlibsse-ng.plugin", {
-        name = "ConsoleDebugger",
-        author = "ConsoleDebugger contributors",
+        name = "ConsoleLink",
+        author = "ConsoleLink contributors",
         description = "Skyrim console observability, display, and command submission debug helper",
         options = {
             address_library = true,
@@ -71,7 +71,7 @@ target("ConsoleDebugger")
     add_headerfiles("src/**.h", "src/**.hpp")
     add_includedirs("src")
 
-target("ConsoleDebuggerTests")
+target("ConsoleLinkTests")
     set_kind("binary")
     set_default(false)
 
@@ -88,3 +88,4 @@ target("ConsoleDebuggerTests")
     )
 
     add_includedirs("src")
+

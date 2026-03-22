@@ -11,8 +11,8 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build.ps1"
-$pluginTarget = "ConsoleDebugger"
-$testTarget = "ConsoleDebuggerTests"
+$pluginTarget = "ConsoleLink"
+$testTarget = "ConsoleLinkTests"
 
 & $buildScript -Mode $Mode -IncludeTests -ConfigureOnly -Quiet:$Quiet
 
@@ -43,3 +43,4 @@ try {
 } finally {
     Pop-Location
 }
+

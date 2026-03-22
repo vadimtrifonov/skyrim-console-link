@@ -17,7 +17,7 @@ namespace
 
 	constexpr auto        kPollInterval = 200ms;
 	constexpr std::size_t kMaxReadBytesPerPoll = 64 * 1024;
-	constexpr auto        kDisplayPrefix = "ConsoleDebugger:";
+	constexpr auto        kDisplayPrefix = "ConsoleLink:";
 
 	class ScopedHandle
 	{
@@ -513,3 +513,4 @@ namespace Display
 		DisplayService::GetSingleton().Initialize(settings, outboxPath);
 	}
 }
+

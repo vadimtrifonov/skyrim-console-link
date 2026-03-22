@@ -27,7 +27,7 @@ namespace
 	{
 		static std::uint32_t counter = 0;
 		auto                 path = std::filesystem::temp_directory_path();
-		path /= "ConsoleDebugger-tests-" + std::to_string(GetCurrentProcessId()) + "-" + std::to_string(counter++) + ".ini";
+		path /= "ConsoleLink-tests-" + std::to_string(GetCurrentProcessId()) + "-" + std::to_string(counter++) + ".ini";
 		return path;
 	}
 
@@ -226,19 +226,19 @@ namespace
 
 	void TestLegacyOutboxPathRemapsToLogDirectory()
 	{
-		const std::filesystem::path configured = L"Data/SKSE/Plugins/ConsoleDebugger.outbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleDebugger-log-root";
+		const std::filesystem::path configured = L"Data/SKSE/Plugins/ConsoleLink.outbox.txt";
+		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
 		const auto                  result = Display::ResolveOutboxPath(configured, logDirectory);
 
 		Expect(result.configuredPath == configured, "legacy configured outbox path mismatch");
 		Expect(result.remappedLegacyDefault, "legacy outbox path should be remapped");
-		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / L"ConsoleDebugger.outbox.txt"), "legacy outbox path should resolve under the log directory");
+		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / L"ConsoleLink.outbox.txt"), "legacy outbox path should resolve under the log directory");
 	}
 
 	void TestRelativeOutboxPathResolvesUnderLogDirectory()
 	{
-		const std::filesystem::path configured = L"ConsoleDebugger.outbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleDebugger-log-root";
+		const std::filesystem::path configured = L"ConsoleLink.outbox.txt";
+		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
 		const auto                  result = Display::ResolveOutboxPath(configured, logDirectory);
 
 		Expect(result.configuredPath == configured, "relative configured outbox path mismatch");
@@ -248,8 +248,8 @@ namespace
 
 	void TestRelativeInboxPathResolvesUnderLogDirectory()
 	{
-		const std::filesystem::path configured = L"ConsoleDebugger.inbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleDebugger-log-root";
+		const std::filesystem::path configured = L"ConsoleLink.inbox.txt";
+		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
 		const auto                  result = Command::ResolveInboxPath(configured, logDirectory);
 
 		Expect(result.configuredPath == configured, "configured inbox path mismatch");
@@ -280,3 +280,4 @@ int main()
 		return 1;
 	}
 }
+
