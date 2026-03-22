@@ -3,6 +3,7 @@
 // clang-format off
 #include "pch.h"
 #include "RE/C/ConsoleLog.h"
+#include "console/ConsoleActivityPolicy.h"
 #include "logging/ConsoleActivityLog.h"
 // clang-format on
 
@@ -355,6 +356,7 @@ namespace
 
 			for (const auto& line : lines) {
 				const auto consoleLine = std::string(kWriteBackPrefix) + " " + line;
+				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
 				Logging::LogWriteBackLine(consoleLine);
 			}

@@ -9,10 +9,55 @@ namespace
 {
 	std::mutex                      g_consoleLogLock;
 	std::shared_ptr<spdlog::logger> g_consoleActivityLogger;
+	std::atomic_bool                g_consoleActivityDisabled = false;
+	std::atomic_bool                g_consoleActivityFailureLogged = false;
 
 	std::string BuildRecord(std::string_view channel, std::string_view line)
 	{
 		return "[" + std::string(channel) + "] " + std::string(line);
+	}
+
+	void DisableConsoleActivityLogging(std::string_view reason) noexcept
+	{
+		g_consoleActivityDisabled = true;
+		{
+			std::scoped_lock lock(g_consoleLogLock);
+			g_consoleActivityLogger.reset();
+		}
+
+		if (!g_consoleActivityFailureLogged.exchange(true)) {
+			try {
+				logs::warn("Disabling console activity logging after a plugin-side failure: {}", reason);
+			} catch (...) {
+				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+			}
+		}
+	}
+
+	void LogConsoleActivityLine(std::string_view channel, std::string_view line) noexcept
+	{
+		if (g_consoleActivityDisabled.load()) {
+			return;
+		}
+
+		try {
+			const auto record = BuildRecord(channel, line);
+			logs::info("{}", record);
+
+			std::shared_ptr<spdlog::logger> logger;
+			{
+				std::scoped_lock lock(g_consoleLogLock);
+				logger = g_consoleActivityLogger;
+			}
+
+			if (logger) {
+				logger->info("{}", record);
+			}
+		} catch (const std::exception& exception) {
+			DisableConsoleActivityLogging(exception.what());
+		} catch (...) {
+			DisableConsoleActivityLogging("unknown exception");
+		}
 	}
 }
 
@@ -22,6 +67,8 @@ namespace Logging
 	{
 		std::scoped_lock lock(g_consoleLogLock);
 		g_consoleActivityLogger.reset();
+		g_consoleActivityDisabled = false;
+		g_consoleActivityFailureLogged = false;
 
 		if (!settings.mirrorToSeparateConsoleLog) {
 			return;
@@ -48,19 +95,18 @@ namespace Logging
 		}
 	}
 
-	void LogWriteBackLine(std::string_view line)
+	void LogConsoleOutputLine(std::string_view line) noexcept
 	{
-		const auto record = BuildRecord("console-writeback", line);
-		logs::info("{}", record);
+		LogConsoleActivityLine("console-out", line);
+	}
 
-		std::shared_ptr<spdlog::logger> logger;
-		{
-			std::scoped_lock lock(g_consoleLogLock);
-			logger = g_consoleActivityLogger;
-		}
+	void LogConsoleInputLine(std::string_view line) noexcept
+	{
+		LogConsoleActivityLine("console-in", line);
+	}
 
-		if (logger) {
-			logger->info("{}", record);
-		}
+	void LogWriteBackLine(std::string_view line) noexcept
+	{
+		LogConsoleActivityLine("console-writeback", line);
 	}
 }

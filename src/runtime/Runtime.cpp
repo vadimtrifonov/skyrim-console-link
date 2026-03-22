@@ -1,11 +1,15 @@
 #include "runtime/Runtime.h"
 
+#include "capture/ConsoleInputCapture.h"
+#include "capture/ConsoleOutputCapture.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 #include "writeback/WriteBackService.h"
 
 namespace
 {
+	constexpr std::size_t kCaptureTrampolineSize = 128;
+
 	std::string_view GetRuntimeName()
 	{
 		if (REL::Module::IsVR()) {
@@ -15,6 +19,26 @@ namespace
 			return "Skyrim AE";
 		}
 		return "Skyrim SE";
+	}
+
+	void InitializeCaptureTrampoline(const Config::Settings& settings)
+	{
+		if (!REL::Module::IsVR()) {
+			return;
+		}
+
+		if (!settings.enableConsoleInputLogging && !settings.enableConsoleOutputLogging) {
+			return;
+		}
+
+		try {
+			SKSE::AllocTrampoline(kCaptureTrampolineSize);
+			logs::info("Reserved {} bytes of shared trampoline space for console capture hooks", kCaptureTrampolineSize);
+		} catch (const std::exception& exception) {
+			logs::warn("Failed to reserve shared trampoline space for console capture hooks: {}", exception.what());
+		} catch (...) {
+			logs::warn("Failed to reserve shared trampoline space for console capture hooks");
+		}
 	}
 }
 
@@ -30,6 +54,7 @@ namespace Runtime
 			settings.enableConsoleWriteBack);
 
 		Logging::InitializeConsoleActivityLog(settings);
+		InitializeCaptureTrampoline(settings);
 
 		if (!REL::Module::IsVR()) {
 			logs::warn(
@@ -37,7 +62,8 @@ namespace Runtime
 				GetRuntimeName());
 		}
 
+		Capture::Output::Install(settings);
+		Capture::Input::Install(settings);
 		WriteBack::Initialize(settings, outboxPath);
-		logs::info("Observational console hooks are not installed in this build");
 	}
 }
