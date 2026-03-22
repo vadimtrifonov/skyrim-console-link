@@ -3,7 +3,9 @@
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 
+#include "RE/C/Console.h"
 #include "RE/F/FxDelegateArgs.h"
+#include "RE/U/UI.h"
 
 #include <Windows.h>
 
@@ -50,8 +52,16 @@ namespace
 	constexpr std::size_t kAbsoluteJumpSize = 14;
 
 	ExecuteCommandCallback_t g_originalExecuteCommand = nullptr;
+	ExecuteCommandCallback_t g_directExecuteCommand = nullptr;
+	std::uintptr_t           g_executeCommandTargetAddress = 0;
+	bool                     g_executeCommandPathValidated = false;
 	std::atomic_bool         g_pluginCaptureDisabled = false;
 	std::atomic_bool         g_pluginCaptureFailureLogged = false;
+	std::atomic_bool         g_submissionDisabled = false;
+	std::atomic_bool         g_submissionFailureLogged = false;
+	std::atomic_bool         g_submissionUnavailableLogged = false;
+	std::atomic_bool         g_loggedMissingConsoleMenu = false;
+	std::atomic_bool         g_loggedMissingConsoleMovie = false;
 	std::atomic_bool         g_loggedNoArgs = false;
 	std::atomic_bool         g_loggedUnexpectedType = false;
 	std::atomic_bool         g_loggedNullString = false;
@@ -98,6 +108,18 @@ namespace
 		}
 	}
 
+	void DisableCommandSubmission(std::string_view reason) noexcept
+	{
+		g_submissionDisabled = true;
+		if (!g_submissionFailureLogged.exchange(true)) {
+			try {
+				logs::warn("Disabling console command submission after failure: {}", reason);
+			} catch (...) {
+				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+			}
+		}
+	}
+
 	void WarnOnce(std::atomic_bool& flag, std::string_view message) noexcept
 	{
 		if (flag.exchange(true)) {
@@ -109,6 +131,41 @@ namespace
 		} catch (...) {
 			// Intentionally swallow logger failures so detoured paths remain fail-soft.
 		}
+	}
+
+	bool ResolveExecuteCommandPath()
+	{
+		if (g_executeCommandPathValidated) {
+			return true;
+		}
+
+		const auto target = REL::Module::get().base() + kExecuteCommandHookSite.callbackRva;
+
+		std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> actualBytes{};
+		std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(target), actualBytes.size());
+		if (!std::equal(actualBytes.begin(), actualBytes.end(), kExecuteCommandHookSite.expectedPrologue.begin(), kExecuteCommandHookSite.expectedPrologue.end())) {
+			logs::warn(
+				"Skipping ExecuteCommand-path features: {} ExecuteCommand callback prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
+				kExecuteCommandHookSite.runtimeLabel,
+				target,
+				FormatBytes(kExecuteCommandHookSite.expectedPrologue),
+				FormatBytes(actualBytes));
+			return false;
+		}
+
+		g_directExecuteCommand = reinterpret_cast<ExecuteCommandCallback_t>(target);
+		g_executeCommandTargetAddress = target;
+		g_executeCommandPathValidated = true;
+		return true;
+	}
+
+	[[nodiscard]] ExecuteCommandCallback_t GetSubmissionCallback() noexcept
+	{
+		if (g_originalExecuteCommand != nullptr) {
+			return g_originalExecuteCommand;
+		}
+
+		return g_executeCommandPathValidated ? g_directExecuteCommand : nullptr;
 	}
 
 	std::string TrimConsoleCommand(std::string value)
@@ -250,8 +307,8 @@ namespace Capture::Input
 		}
 		attempted = true;
 
-		if (!settings.enableConsoleInputLogging) {
-			logs::info("Console input capture is disabled by config");
+		if (!settings.enableConsoleInputLogging && !settings.enableConsoleCommandSubmission) {
+			logs::info("Console input capture and command submission are disabled by config");
 			return;
 		}
 
@@ -261,19 +318,20 @@ namespace Capture::Input
 		}
 
 		try {
-			const auto target = REL::Module::get().base() + kExecuteCommandHookSite.callbackRva;
-
-			std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> actualBytes{};
-			std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(target), actualBytes.size());
-			if (!std::equal(actualBytes.begin(), actualBytes.end(), kExecuteCommandHookSite.expectedPrologue.begin(), kExecuteCommandHookSite.expectedPrologue.end())) {
-				logs::warn(
-					"Skipping passive console input capture: {} ExecuteCommand callback prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
-					kExecuteCommandHookSite.runtimeLabel,
-					target,
-					FormatBytes(kExecuteCommandHookSite.expectedPrologue),
-					FormatBytes(actualBytes));
+			if (!ResolveExecuteCommandPath()) {
 				return;
 			}
+
+			if (!settings.enableConsoleInputLogging) {
+				logs::info(
+					"Validated the {} ExecuteCommand callback path for command submission at 0x{:X}",
+					kExecuteCommandHookSite.runtimeLabel,
+					g_executeCommandTargetAddress);
+				return;
+			}
+
+			std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> actualBytes{};
+			std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(g_executeCommandTargetAddress), actualBytes.size());
 
 			auto* trampoline = static_cast<std::uint8_t*>(SKSE::GetTrampoline().allocate(kExecuteCommandHookSite.hookSize + kAbsoluteJumpSize));
 			if (trampoline == nullptr) {
@@ -284,21 +342,82 @@ namespace Capture::Input
 			std::memcpy(trampoline, actualBytes.data(), actualBytes.size());
 			WriteAbsoluteJump(
 				reinterpret_cast<std::uintptr_t>(trampoline) + kExecuteCommandHookSite.hookSize,
-				target + kExecuteCommandHookSite.hookSize,
+				g_executeCommandTargetAddress + kExecuteCommandHookSite.hookSize,
 				kAbsoluteJumpSize);
 
 			g_originalExecuteCommand = reinterpret_cast<ExecuteCommandCallback_t>(trampoline);
-			WriteAbsoluteJump(target, reinterpret_cast<std::uintptr_t>(&HookedExecuteCommand), kExecuteCommandHookSite.hookSize);
+			WriteAbsoluteJump(g_executeCommandTargetAddress, reinterpret_cast<std::uintptr_t>(&HookedExecuteCommand), kExecuteCommandHookSite.hookSize);
 
 			logs::info(
 				"Installed passive console input capture for {} at 0x{:X} with a validated {}-byte ExecuteCommand callback prologue",
 				kExecuteCommandHookSite.runtimeLabel,
-				target,
+				g_executeCommandTargetAddress,
 				kExecuteCommandHookSite.hookSize);
 		} catch (const std::exception& exception) {
 			logs::warn("Skipping passive console input capture after install failure: {}", exception.what());
 		} catch (...) {
 			logs::warn("Skipping passive console input capture after an unknown install failure");
 		}
+	}
+
+	bool CanSubmitCommands() noexcept
+	{
+		return g_executeCommandPathValidated;
+	}
+
+	SubmitCommandResult SubmitCommand(std::string_view command) noexcept
+	{
+		if (command.empty() || g_submissionDisabled.load()) {
+			return SubmitCommandResult::kTerminalFailure;
+		}
+
+		try {
+			const auto callback = GetSubmissionCallback();
+			if (callback == nullptr) {
+				WarnOnce(
+					g_submissionUnavailableLogged,
+					"Console command submission is unavailable because the validated ExecuteCommand path was not resolved");
+				return SubmitCommandResult::kTerminalFailure;
+			}
+
+			auto* ui = RE::UI::GetSingleton();
+			if (ui == nullptr) {
+				WarnOnce(
+					g_submissionUnavailableLogged,
+					"Console command submission is waiting for RE::UI to become available");
+				return SubmitCommandResult::kDeferred;
+			}
+
+			auto console = ui->GetMenu<RE::Console>();
+			if (!console) {
+				WarnOnce(
+					g_loggedMissingConsoleMenu,
+					"Console command submission is holding pending commands because the console menu is not open");
+				return SubmitCommandResult::kDeferred;
+			}
+			g_loggedMissingConsoleMenu = false;
+
+			auto movie = console->uiMovie;
+			if (!movie) {
+				WarnOnce(
+					g_loggedMissingConsoleMovie,
+					"Console command submission is holding pending commands because the console movie is not available");
+				return SubmitCommandResult::kDeferred;
+			}
+			g_loggedMissingConsoleMovie = false;
+
+			std::array<RE::GFxValue, 1> args{ RE::GFxValue(command) };
+			RE::FxDelegateArgs          delegateArgs(RE::GFxValue{}, console.get(), movie.get(), args.data(), static_cast<std::uint32_t>(args.size()));
+
+			callback(delegateArgs);
+			Logging::LogConsoleSubmitLine(command);
+			return SubmitCommandResult::kSubmitted;
+		} catch (const std::exception& exception) {
+			DisableCommandSubmission(exception.what());
+		} catch (...) {
+			DisableCommandSubmission("unknown exception");
+		}
+
+		return SubmitCommandResult::kTerminalFailure;
 	}
 }

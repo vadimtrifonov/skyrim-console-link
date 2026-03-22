@@ -2,9 +2,10 @@
 
 #include "capture/ConsoleInputCapture.h"
 #include "capture/ConsoleOutputCapture.h"
+#include "command/CommandSubmissionService.h"
+#include "display/DisplayService.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
-#include "writeback/WriteBackService.h"
 
 namespace
 {
@@ -44,14 +45,18 @@ namespace
 
 namespace Runtime
 {
-	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath)
+	void Initialize(
+		const Config::Settings&      settings,
+		const std::filesystem::path& outboxPath,
+		const std::filesystem::path& inboxPath)
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
-			"Feature state input_logging={} output_logging={} write_back={}",
+			"Feature state input_logging={} output_logging={} display={} command_submission={}",
 			settings.enableConsoleInputLogging,
 			settings.enableConsoleOutputLogging,
-			settings.enableConsoleWriteBack);
+			settings.enableConsoleDisplay,
+			settings.enableConsoleCommandSubmission);
 
 		Logging::InitializeConsoleActivityLog(settings);
 		InitializeCaptureTrampoline(settings);
@@ -64,6 +69,7 @@ namespace Runtime
 
 		Capture::Output::Install(settings);
 		Capture::Input::Install(settings);
-		WriteBack::Initialize(settings, outboxPath);
+		Display::Initialize(settings, outboxPath);
+		Command::Initialize(settings, inboxPath);
 	}
 }

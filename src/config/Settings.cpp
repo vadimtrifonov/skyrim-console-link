@@ -8,7 +8,7 @@ namespace
 {
 	constexpr std::size_t kInitialIniBufferSize = 256;
 	constexpr std::size_t kMaxIniBufferSize = 4096;
-	constexpr std::size_t kMaxOutboxPathLength = 512;
+	constexpr std::size_t kMaxFileBackedPathLength = 512;
 
 	template <class T>
 	struct ParseResult
@@ -28,6 +28,12 @@ namespace
 	{
 		std::wstring_view section;
 		std::wstring_view key;
+	};
+
+	struct ReadEntryResult
+	{
+		IniEntry       entry{};
+		RawValueResult raw{};
 	};
 
 	bool HasIniKey(const std::filesystem::path& path, IniEntry entry)
@@ -99,6 +105,21 @@ namespace
 		return { value, false, true };
 	}
 
+	ReadEntryResult ReadFirstPresentRawValue(
+		const std::filesystem::path&           path,
+		std::initializer_list<IniEntry> entries)
+	{
+		const auto fallbackEntry = entries.begin() != entries.end() ? *entries.begin() : IniEntry{};
+		for (const auto entry : entries) {
+			const auto raw = ReadRawValue(path, entry);
+			if (!raw.missing) {
+				return { entry, raw };
+			}
+		}
+
+		return { fallbackEntry, { L"", true, false } };
+	}
+
 	std::wstring Trim(std::wstring value)
 	{
 		const auto notSpace = [](wchar_t ch) {
@@ -140,18 +161,19 @@ namespace
 			"'; using fallback " + std::string(fallback));
 	}
 
-	void AddWriteBackDisableWarning(
+	void AddFeatureDisableWarning(
 		std::vector<std::string>& warnings,
 		IniEntry                  entry,
 		const std::wstring&       raw,
-		std::string_view          reason)
+		std::string_view          reason,
+		std::string_view          featureLabel)
 	{
 		warnings.push_back(
 			"Rejected INI value [" + ToUtf8(entry.section) +
 			"] " + ToUtf8(entry.key) +
 			"='" + ToUtf8(raw) +
 			"' (" + std::string(reason) +
-			"); disabling console write-back");
+			"); disabling " + std::string(featureLabel));
 	}
 
 	ParseResult<bool> ParseBool(const std::wstring& raw, bool fallback)
@@ -204,10 +226,16 @@ namespace Config
 		return L"ConsoleDebugger.outbox.txt";
 	}
 
+	std::filesystem::path GetDefaultInboxPath()
+	{
+		return L"ConsoleDebugger.inbox.txt";
+	}
+
 	Settings GetBuiltInDefaults()
 	{
 		Settings settings{};
 		settings.outboxPath = GetDefaultOutboxPath();
+		settings.inboxPath = GetDefaultInboxPath();
 		return settings;
 	}
 
@@ -216,62 +244,73 @@ namespace Config
 		LoadResult result{};
 		result.settings = GetBuiltInDefaults();
 
-		auto applyBool = [&](IniEntry entry, bool Settings::* member) {
-			const auto raw = ReadRawValue(path, entry);
-			const auto parsed = ParseBool(raw.value, result.settings.*member);
+		auto applyBool = [&](std::initializer_list<IniEntry> entries, bool Settings::* member) {
+			const auto rawResult = ReadFirstPresentRawValue(path, entries);
+			const auto parsed = ParseBool(rawResult.raw.value, result.settings.*member);
 			if (parsed.malformed) {
-				AddMalformedWarning(result.warnings, entry, raw.value, parsed.value ? "true" : "false");
+				AddMalformedWarning(result.warnings, rawResult.entry, rawResult.raw.value, parsed.value ? "true" : "false");
 			}
 			result.settings.*member = parsed.value;
 		};
 
-		auto applyUInt32 = [&](IniEntry entry, std::uint32_t Settings::* member) {
-			const auto raw = ReadRawValue(path, entry);
-			const auto parsed = ParseUInt32(raw.value, result.settings.*member);
+		auto applyUInt32 = [&](std::initializer_list<IniEntry> entries, std::uint32_t Settings::* member) {
+			const auto rawResult = ReadFirstPresentRawValue(path, entries);
+			const auto parsed = ParseUInt32(rawResult.raw.value, result.settings.*member);
 			if (parsed.malformed) {
-				AddMalformedWarning(result.warnings, entry, raw.value, std::to_string(parsed.value));
+				AddMalformedWarning(result.warnings, rawResult.entry, rawResult.raw.value, std::to_string(parsed.value));
 			}
 			result.settings.*member = parsed.value;
 		};
 
-		auto applyPath = [&](IniEntry entry, std::filesystem::path Settings::* member) {
-			const auto raw = ReadRawValue(path, entry);
-			if (raw.missing) {
+		auto applyPath = [&](std::initializer_list<IniEntry> entries, std::filesystem::path Settings::* pathMember, bool Settings::* enabledMember, std::string_view featureLabel) {
+			const auto rawResult = ReadFirstPresentRawValue(path, entries);
+			if (rawResult.raw.missing) {
 				return;
 			}
 
-			if (raw.truncated) {
-				result.settings.*member = std::filesystem::path{};
-				result.settings.enableConsoleWriteBack = false;
-				AddWriteBackDisableWarning(result.warnings, entry, raw.value, "value exceeds the supported INI string length");
+			if (rawResult.raw.truncated) {
+				result.settings.*pathMember = std::filesystem::path{};
+				result.settings.*enabledMember = false;
+				AddFeatureDisableWarning(result.warnings, rawResult.entry, rawResult.raw.value, "value exceeds the supported INI string length", featureLabel);
 				return;
 			}
 
-			const auto value = Trim(raw.value);
+			const auto value = Trim(rawResult.raw.value);
 			if (value.empty()) {
-				result.settings.*member = std::filesystem::path{};
-				result.settings.enableConsoleWriteBack = false;
-				AddWriteBackDisableWarning(result.warnings, entry, raw.value, "value is empty");
+				result.settings.*pathMember = std::filesystem::path{};
+				result.settings.*enabledMember = false;
+				AddFeatureDisableWarning(result.warnings, rawResult.entry, rawResult.raw.value, "value is empty", featureLabel);
 				return;
 			}
-			if (value.size() > kMaxOutboxPathLength) {
-				result.settings.*member = std::filesystem::path{};
-				result.settings.enableConsoleWriteBack = false;
-				AddWriteBackDisableWarning(result.warnings, entry, raw.value, "value exceeds the supported outbox path length");
+			if (value.size() > kMaxFileBackedPathLength) {
+				result.settings.*pathMember = std::filesystem::path{};
+				result.settings.*enabledMember = false;
+				AddFeatureDisableWarning(result.warnings, rawResult.entry, rawResult.raw.value, "value exceeds the supported file path length", featureLabel);
 				return;
 			}
 
-			result.settings.*member = std::filesystem::path(value);
+			result.settings.*pathMember = std::filesystem::path(value);
 		};
 
-		applyBool({ L"Main", L"EnableConsoleInputLogging" }, &Settings::enableConsoleInputLogging);
-		applyBool({ L"Main", L"EnableConsoleOutputLogging" }, &Settings::enableConsoleOutputLogging);
-		applyBool({ L"Main", L"EnableConsoleWriteBack" }, &Settings::enableConsoleWriteBack);
-		applyBool({ L"Logging", L"MirrorToSeparateConsoleLog" }, &Settings::mirrorToSeparateConsoleLog);
-		applyBool({ L"Logging", L"IncludeTimestamps" }, &Settings::includeTimestamps);
-		applyPath({ L"WriteBack", L"OutboxPath" }, &Settings::outboxPath);
-		applyUInt32({ L"WriteBack", L"MaxLinesPerTick" }, &Settings::maxLinesPerTick);
-		applyBool({ L"Debug", L"TraceHookInstall" }, &Settings::traceHookInstall);
+		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
+		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
+		applyBool({ { L"Main", L"EnableConsoleDisplay" } }, &Settings::enableConsoleDisplay);
+		applyBool({ { L"Main", L"EnableConsoleCommandSubmission" } }, &Settings::enableConsoleCommandSubmission);
+		applyBool({ { L"Logging", L"MirrorToSeparateConsoleLog" } }, &Settings::mirrorToSeparateConsoleLog);
+		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
+		applyPath(
+			{ { L"Display", L"OutboxPath" } },
+			&Settings::outboxPath,
+			&Settings::enableConsoleDisplay,
+			"console display");
+		applyUInt32({ { L"Display", L"MaxLinesPerTick" } }, &Settings::maxDisplayLinesPerTick);
+		applyPath(
+			{ { L"CommandSubmission", L"InboxPath" } },
+			&Settings::inboxPath,
+			&Settings::enableConsoleCommandSubmission,
+			"console command submission");
+		applyUInt32({ { L"CommandSubmission", L"MaxCommandsPerTick" } }, &Settings::maxCommandsPerTick);
+		applyBool({ { L"Debug", L"TraceHookInstall" } }, &Settings::traceHookInstall);
 
 		return result;
 	}

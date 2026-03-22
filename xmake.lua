@@ -58,7 +58,7 @@ target("ConsoleDebugger")
     add_rules("commonlibsse-ng.plugin", {
         name = "ConsoleDebugger",
         author = "ConsoleDebugger contributors",
-        description = "Skyrim console observability and write-back debug helper",
+        description = "Skyrim console observability, display, and command submission debug helper",
         options = {
             address_library = true,
             struct_dependent = false
@@ -80,7 +80,10 @@ target("ConsoleDebuggerTests")
 
     add_files(
         "src/config/Settings.cpp",
-        "src/writeback/OutboxPath.cpp",
+        "src/command/CommandSubmissionState.cpp",
+        "src/command/InboxPath.cpp",
+        "src/display/DisplayState.cpp",
+        "src/display/OutboxPath.cpp",
         "tests/**.cpp"
     )
 

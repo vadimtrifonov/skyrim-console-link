@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace WriteBack
+namespace Display
 {
 	struct ResolvedOutboxPath
 	{

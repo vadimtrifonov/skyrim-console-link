@@ -11,13 +11,16 @@ namespace Config
 	{
 		bool enableConsoleInputLogging = true;
 		bool enableConsoleOutputLogging = true;
-		bool enableConsoleWriteBack = true;
+		bool enableConsoleDisplay = true;
+		bool enableConsoleCommandSubmission = true;
 
 		bool mirrorToSeparateConsoleLog = true;
 		bool includeTimestamps = true;
 
 		std::filesystem::path outboxPath = L"ConsoleDebugger.outbox.txt";
-		std::uint32_t         maxLinesPerTick = 8;
+		std::uint32_t         maxDisplayLinesPerTick = 8;
+		std::filesystem::path inboxPath = L"ConsoleDebugger.inbox.txt";
+		std::uint32_t         maxCommandsPerTick = 4;
 
 		bool traceHookInstall = false;
 	};
@@ -30,6 +33,7 @@ namespace Config
 
 	[[nodiscard]] std::filesystem::path GetDefaultSettingsPath();
 	[[nodiscard]] std::filesystem::path GetDefaultOutboxPath();
+	[[nodiscard]] std::filesystem::path GetDefaultInboxPath();
 	[[nodiscard]] Settings              GetBuiltInDefaults();
 	[[nodiscard]] LoadResult            LoadSettingsWithDiagnostics(const std::filesystem::path& path);
 	[[nodiscard]] Settings              LoadSettings(const std::filesystem::path& path);

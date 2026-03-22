@@ -1,4 +1,4 @@
-#include "writeback/OutboxPath.h"
+#include "display/OutboxPath.h"
 
 #include "config/Settings.h"
 #include "pch.h"
@@ -8,7 +8,7 @@ namespace
 	constexpr auto kLegacyDefaultOutboxPath = L"Data/SKSE/Plugins/ConsoleDebugger.outbox.txt";
 }
 
-namespace WriteBack
+namespace Display
 {
 	ResolvedOutboxPath ResolveOutboxPath(
 		const std::filesystem::path& configuredPath,

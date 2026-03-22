@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-namespace WriteBack
+namespace Display
 {
 	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
 }
