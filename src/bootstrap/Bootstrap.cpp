@@ -84,14 +84,13 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config display_outbox_path='{}' resolved_display_outbox_path='{}' max_display_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_commands_per_tick={} trace_hook_install={}",
+			"Config display_outbox_path='{}' resolved_display_outbox_path='{}' max_display_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_commands_per_tick={}",
 			configuredOutboxPath.string(),
 			runtimeOutboxPath.string(),
 			loadResult.settings.maxDisplayLinesPerTick,
 			configuredInboxPath.string(),
 			runtimeInboxPath.string(),
-			loadResult.settings.maxCommandsPerTick,
-			loadResult.settings.traceHookInstall);
+			loadResult.settings.maxCommandsPerTick);
 
 		Runtime::Initialize(loadResult.settings, runtimeOutboxPath, runtimeInboxPath);
 	}

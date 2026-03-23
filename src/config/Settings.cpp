@@ -309,7 +309,6 @@ namespace Config
 			&Settings::enableConsoleCommandSubmission,
 			"console command submission");
 		applyUInt32({ { L"CommandSubmission", L"MaxCommandsPerTick" } }, &Settings::maxCommandsPerTick);
-		applyBool({ { L"Debug", L"TraceHookInstall" } }, &Settings::traceHookInstall);
 
 		return result;
 	}

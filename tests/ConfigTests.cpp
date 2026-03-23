@@ -52,7 +52,6 @@ namespace
 		Expect(result.settings.maxDisplayLinesPerTick == defaults.maxDisplayLinesPerTick, "default max display lines per tick mismatch");
 		Expect(result.settings.inboxPath == defaults.inboxPath, "default inbox path mismatch");
 		Expect(result.settings.maxCommandsPerTick == defaults.maxCommandsPerTick, "default max commands per tick mismatch");
-		Expect(result.settings.traceHookInstall == defaults.traceHookInstall, "default hook tracing should be disabled");
 		Expect(result.warnings.empty(), "missing config should not produce warnings");
 	}
 
@@ -76,10 +75,7 @@ namespace
 			"\n"
 			"[CommandSubmission]\n"
 			"InboxPath = Alt.inbox.txt\n"
-			"MaxCommandsPerTick = 2\n"
-			"\n"
-			"[Debug]\n"
-			"TraceHookInstall = true\n");
+			"MaxCommandsPerTick = 2\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
@@ -92,7 +88,6 @@ namespace
 		Expect(result.settings.maxDisplayLinesPerTick == 3, "override max display lines per tick mismatch");
 		Expect(result.settings.inboxPath == std::filesystem::path(L"Alt.inbox.txt"), "override inbox path mismatch");
 		Expect(result.settings.maxCommandsPerTick == 2, "override max commands per tick mismatch");
-		Expect(result.settings.traceHookInstall, "override hook tracing mismatch");
 		Expect(result.warnings.empty(), "valid config should not produce warnings");
 
 		std::filesystem::remove(path);
@@ -110,18 +105,14 @@ namespace
 			"MaxLinesPerTick = nope\n"
 			"\n"
 			"[CommandSubmission]\n"
-			"MaxCommandsPerTick = invalid\n"
-			"\n"
-			"[Debug]\n"
-			"TraceHookInstall = perhaps\n");
+			"MaxCommandsPerTick = invalid\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
 		Expect(result.settings.enableConsoleInputLogging, "malformed bool should fall back to default");
 		Expect(result.settings.maxDisplayLinesPerTick == 8, "malformed uint should fall back to default");
 		Expect(result.settings.maxCommandsPerTick == 4, "malformed command uint should fall back to default");
-		Expect(!result.settings.traceHookInstall, "malformed trace flag should fall back to default");
-		Expect(result.warnings.size() == 4, "expected malformed warnings");
+		Expect(result.warnings.size() == 3, "expected malformed warnings");
 
 		std::filesystem::remove(path);
 	}

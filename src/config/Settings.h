@@ -20,8 +20,6 @@ namespace Config
 		std::uint32_t         maxDisplayLinesPerTick = 8;
 		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
 		std::uint32_t         maxCommandsPerTick = 4;
-
-		bool traceHookInstall = false;
 	};
 
 	struct LoadResult
