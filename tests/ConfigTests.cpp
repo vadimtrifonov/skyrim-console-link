@@ -13,6 +13,7 @@
 
 void RunCommandSubmissionStateTests();
 void RunDisplayStateTests();
+void RunLookupCommandTests();
 
 namespace
 {
@@ -261,6 +262,7 @@ int main()
 		TestRelativeInboxPathResolvesUnderLogDirectory();
 		RunCommandSubmissionStateTests();
 		RunDisplayStateTests();
+		RunLookupCommandTests();
 		std::cout << "All tests passed.\n";
 		return 0;
 	} catch (const std::exception& exception) {

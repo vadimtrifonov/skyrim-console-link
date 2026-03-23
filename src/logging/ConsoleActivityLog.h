@@ -12,5 +12,6 @@ namespace Logging
 	void LogConsoleInputLine(std::string_view line) noexcept;
 	void LogConsoleOutputLine(std::string_view line) noexcept;
 	void LogConsoleSubmitLine(std::string_view line) noexcept;
+	void LogLocalLine(std::string_view line) noexcept;
 	void LogDisplayLine(std::string_view line) noexcept;
 }

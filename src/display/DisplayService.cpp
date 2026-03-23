@@ -108,6 +108,11 @@ namespace
 		return ToUtf8(path.native());
 	}
 
+	std::string BuildConsoleLine(std::string_view line)
+	{
+		return std::string(kDisplayPrefix) + " " + std::string(line);
+	}
+
 	std::string_view DescribeResetReason(const Display::OutboxResetReason reason) noexcept
 	{
 		switch (reason) {
@@ -144,12 +149,14 @@ namespace
 				return;
 			}
 
-			if (!settings.enableConsoleDisplay) {
+			_settings = settings;
+			_displayEnabled = settings.enableConsoleDisplay;
+
+			if (!_displayEnabled) {
 				logs::info("Console display is disabled; outbox service will remain dormant");
 				return;
 			}
 
-			_settings = settings;
 			_outboxPath = outboxPath;
 
 			const auto* messaging = SKSE::GetMessagingInterface();
@@ -165,6 +172,39 @@ namespace
 
 			_listenerRegistered = true;
 			logs::info("Console display watching '{}'", PathToString(_outboxPath));
+		}
+
+		Display::ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept
+		{
+			if (!_displayEnabled) {
+				return Display::ImmediatePrintResult::kDisabled;
+			}
+
+			try {
+				auto* consoleLog = RE::ConsoleLog::GetSingleton();
+				if (consoleLog == nullptr) {
+					return Display::ImmediatePrintResult::kUnavailable;
+				}
+
+				const auto consoleLine = BuildConsoleLine(line);
+				const Console::SuppressOutputScope suppressConsoleOutput;
+				consoleLog->Print("%s", consoleLine.c_str());
+				return Display::ImmediatePrintResult::kPrinted;
+			} catch (const std::exception& exception) {
+				try {
+					logs::warn("Direct console display failed: {}", exception.what());
+				} catch (...) {
+					// Intentionally swallow logger failures so direct display remains fail-soft.
+				}
+			} catch (...) {
+				try {
+					logs::warn("Direct console display failed");
+				} catch (...) {
+					// Intentionally swallow logger failures so direct display remains fail-soft.
+				}
+			}
+
+			return Display::ImmediatePrintResult::kUnavailable;
 		}
 
 	private:
@@ -437,7 +477,7 @@ namespace
 			}
 
 			for (const auto& line : lines) {
-				const auto consoleLine = std::string(kDisplayPrefix) + " " + line;
+				const auto consoleLine = BuildConsoleLine(line);
 				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
 				Logging::LogDisplayLine(consoleLine);
@@ -492,6 +532,7 @@ namespace
 		std::mutex              _queueLock;
 		Display::OutboxState    _outboxState;
 		std::atomic_bool        _initialized = false;
+		bool                    _displayEnabled = false;
 		std::atomic_bool        _serviceDisabled = false;
 		std::atomic_bool        _failureLogged = false;
 		std::atomic_bool        _flushScheduled = false;
@@ -511,6 +552,11 @@ namespace Display
 	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath)
 	{
 		DisplayService::GetSingleton().Initialize(settings, outboxPath);
+	}
+
+	ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept
+	{
+		return DisplayService::GetSingleton().TryPrintImmediateLine(line);
 	}
 }
 

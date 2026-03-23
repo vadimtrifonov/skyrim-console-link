@@ -1,6 +1,7 @@
 #include "command/CommandSubmissionService.h"
 
 #include "capture/ConsoleInputCapture.h"
+#include "command/LocalCommandDispatcher.h"
 #include "command/CommandSubmissionState.h"
 #include "pch.h"
 
@@ -186,6 +187,7 @@ namespace
 		void HandleMessage(const SKSE::MessagingInterface::Message& message)
 		{
 			if (message.type == SKSE::MessagingInterface::kDataLoaded) {
+				_dataLoaded = true;
 				StartWorker();
 			}
 		}
@@ -434,6 +436,8 @@ namespace
 			std::size_t submittedCount = 0;
 			bool        deferred = false;
 			bool        terminalFailure = false;
+			std::string terminalFailureContext;
+			std::string terminalFailureReason;
 			for (std::uint32_t index = 0; index < commandBudget; ++index) {
 				Command::PendingCommand pendingCommand{};
 				bool                    hasPendingCommand = false;
@@ -457,6 +461,32 @@ namespace
 					break;
 				}
 
+				const auto localCommandResult = Command::TryDispatchLocalCommand(pendingCommand.text, _dataLoaded.load());
+				switch (localCommandResult) {
+				case Command::LocalCommandDispatchResult::kHandled:
+					{
+						std::scoped_lock submissionLock(_submissionStateLock);
+						_inboxState.PopFrontCommand(pendingCommand.sequence);
+					}
+					++submittedCount;
+					continue;
+				case Command::LocalCommandDispatchResult::kDeferred:
+					deferred = true;
+					break;
+				case Command::LocalCommandDispatchResult::kTerminalFailure:
+					terminalFailure = true;
+					terminalFailureContext = "terminal local command failure";
+					terminalFailureReason = "a local command failed; inbox submission is parked for this session";
+					break;
+				case Command::LocalCommandDispatchResult::kNotHandled:
+				default:
+					break;
+				}
+
+				if (deferred || terminalFailure) {
+					break;
+				}
+
 				const auto result = Capture::Input::SubmitCommand(pendingCommand.text);
 				if (result == Capture::Input::SubmitCommandResult::kSubmitted) {
 					std::scoped_lock submissionLock(_submissionStateLock);
@@ -472,6 +502,8 @@ namespace
 					break;
 				case Capture::Input::SubmitCommandResult::kTerminalFailure:
 					terminalFailure = true;
+					terminalFailureContext = "terminal command submission failure";
+					terminalFailureReason = "the validated ExecuteCommand path is no longer usable";
 					break;
 				}
 
@@ -481,7 +513,7 @@ namespace
 			}
 
 			if (terminalFailure) {
-				DisableService("terminal command submission failure", "the validated ExecuteCommand path is no longer usable");
+				DisableService(terminalFailureContext, terminalFailureReason);
 				return;
 			}
 
@@ -547,6 +579,7 @@ namespace
 		std::atomic_bool         _serviceDisabled = false;
 		std::atomic_bool         _failureLogged = false;
 		std::atomic_bool         _flushScheduled = false;
+		std::atomic_bool         _dataLoaded = false;
 		std::atomic_uint64_t     _nextFlushAttemptAt = 0;
 		std::atomic_bool         _loggedMissingTaskInterface = false;
 		bool                     _loggedPendingQueueFull = false;

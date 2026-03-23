@@ -109,6 +109,11 @@ namespace Logging
 		LogConsoleActivityLine("console-submit", line);
 	}
 
+	void LogLocalLine(std::string_view line) noexcept
+	{
+		LogConsoleActivityLine("console-local", line);
+	}
+
 	void LogDisplayLine(std::string_view line) noexcept
 	{
 		LogConsoleActivityLine("console-display", line);
