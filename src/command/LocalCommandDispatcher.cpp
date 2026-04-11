@@ -1,6 +1,7 @@
 #include "command/LocalCommandDispatcher.h"
 
 #include "command/LookupCommand.h"
+#include "command/LookupPrefixCommand.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 #include "print/PrintService.h"
@@ -13,6 +14,7 @@ namespace
 	{
 		kNotHandled,
 		kLookup,
+		kLookupPrefix,
 		kUnknown
 	};
 
@@ -75,6 +77,9 @@ namespace
 		if (commandName == "cdbg.lookup") {
 			return LocalCommandKind::kLookup;
 		}
+		if (commandName == "cdbg.lookup-prefix") {
+			return LocalCommandKind::kLookupPrefix;
+		}
 
 		return LocalCommandKind::kUnknown;
 	}
@@ -108,9 +113,13 @@ namespace Command
 			case LocalCommandKind::kLookup:
 				responseLines = ExecuteLookupCommand(arguments);
 				break;
+			case LocalCommandKind::kLookupPrefix:
+				responseLines = ExecuteLookupPrefixCommand(arguments);
+				break;
 			case LocalCommandKind::kUnknown:
 				responseLines.push_back(
-					"unknown local command \"" + std::string(commandName) + "\"; supported: cdbg.lookup <EditorID>");
+					"unknown local command \"" + std::string(commandName) +
+					"\"; supported: cdbg.lookup <EditorID>, cdbg.lookup-prefix <prefix> [limit]");
 				break;
 			case LocalCommandKind::kNotHandled:
 			default:

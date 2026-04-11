@@ -15,6 +15,7 @@ void RunCommandSubmissionStateTests();
 void RunConsoleActivityTaxonomyTests();
 void RunPrintStateTests();
 void RunLookupCommandTests();
+void RunLookupPrefixCommandTests();
 
 namespace
 {
@@ -256,6 +257,7 @@ int main() noexcept  // NOLINT(bugprone-exception-escape)
 		RunConsoleActivityTaxonomyTests();
 		RunPrintStateTests();
 		RunLookupCommandTests();
+		RunLookupPrefixCommandTests();
 		std::cout << "All tests passed.\n";
 		return 0;
 	} catch (const std::exception& exception) {

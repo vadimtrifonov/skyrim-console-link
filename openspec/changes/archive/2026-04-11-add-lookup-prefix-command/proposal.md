@@ -6,17 +6,13 @@
 
 - Add `cdbg.lookup-prefix <prefix> [limit]` as a plugin-local command.
 - Support bounded prefix matching over the native Editor ID map.
-- Return clear local output when the result set is truncated by policy or limit.
+- Use built-in default limit `10` when `limit` is omitted.
+- Return clear local output when the result set is truncated by the effective limit.
 - Keep the command on the local path without engine submission.
 
 ## Capabilities
 
 ### New Capabilities
+- `local-command-lookup-prefix`: Plugin-local prefix lookup command with bounded ordered output.
 
 ### Modified Capabilities
-- `local-command-lookup`: Local lookup support expands from exact match to include bounded prefix search.
-
-## Impact
-
-- Affects local command parsing, Editor ID lookup behavior, and local response formatting.
-- Requires additional automated coverage for prefix matching, limits, and truncated result output.
