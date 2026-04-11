@@ -17,7 +17,7 @@ The repo already has a real domain vocabulary, but the most important cross-cutt
 - `plugin-logging`: logging terminology aligns around the canonical names for lifecycle logs, activity logs, and related startup behavior.
 - `plugin-settings`: startup configuration language aligns around the canonical settings vocabulary.
 - `console-observation`: observational terminology is aligned with the chosen canonical term and activity labels.
-- `console-display`: the print/display surface and its activity naming are aligned with the canonical glossary.
+- `console-print`: the print surface and its activity naming are aligned with the canonical glossary.
 - `command-submission`: inbox, submission, local-command routing, and local/non-local outcomes use the canonical terms.
 - `local-commands`: local command terminology and local activity labels align with the canonical glossary.
 

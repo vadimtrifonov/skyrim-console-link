@@ -5,7 +5,7 @@ File-backed Skyrim VR console command submission through the validated ExecuteCo
 
 ## Requirements
 ### Requirement: Plugin can submit file-backed console commands on Skyrim VR
-The system MUST support a local inbox file for agent-authored console commands and MUST submit unread newline-terminated commands through the validated Skyrim VR `ExecuteCommand` path.
+The system MUST support a local inbox file for agent-authored console commands, MUST submit unread newline-terminated commands through the validated Skyrim VR `ExecuteCommand` path, and MUST record only commands that traverse that engine submission seam as `[console-submit]` activity.
 
 #### Scenario: Unread command is submitted
 - **WHEN** a new newline-terminated command is written to the configured inbox file on Skyrim VR

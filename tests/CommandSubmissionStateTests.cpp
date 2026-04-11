@@ -42,8 +42,8 @@ namespace
 	void TestInboxReplacementResetsFromNewHead()
 	{
 		Command::InboxState state;
-		const auto         originalIdentity = MakeIdentity(1, 10, 100);
-		const auto         replacementIdentity = MakeIdentity(2, 20, 200);
+		const auto          originalIdentity = MakeIdentity(1, 10, 100);
+		const auto          replacementIdentity = MakeIdentity(2, 20, 200);
 
 		const auto observeOriginal = state.ObserveFile(originalIdentity, 8);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read from offset zero");
@@ -64,7 +64,7 @@ namespace
 	void TestInboxTruncationResetsQueuedCommands()
 	{
 		Command::InboxState state;
-		const auto         identity = MakeIdentity(3, 30, 300);
+		const auto          identity = MakeIdentity(3, 30, 300);
 
 		const auto observeOriginal = state.ObserveFile(identity, 8);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before truncation coverage");
@@ -83,7 +83,7 @@ namespace
 	void TestInboxRemovalResetsState()
 	{
 		Command::InboxState state;
-		const auto         identity = MakeIdentity(4, 40, 400);
+		const auto          identity = MakeIdentity(4, 40, 400);
 
 		const auto observeOriginal = state.ObserveFile(identity, 4);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before removal coverage");
@@ -102,7 +102,7 @@ namespace
 	void TestBoundedQueueRefillsFromBufferedFragment()
 	{
 		Command::InboxState state(2, 8 * 1024);
-		const auto         identity = MakeIdentity(5, 50, 500);
+		const auto          identity = MakeIdentity(5, 50, 500);
 
 		const auto observeOriginal = state.ObserveFile(identity, 6);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before queue-cap coverage");
@@ -134,7 +134,7 @@ namespace
 	void TestOversizedFragmentIsDiscarded()
 	{
 		Command::InboxState state(4, 4);
-		const auto         identity = MakeIdentity(6, 60, 600);
+		const auto          identity = MakeIdentity(6, 60, 600);
 
 		const auto observeOriginal = state.ObserveFile(identity, 5);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before oversized-fragment coverage");
@@ -147,8 +147,8 @@ namespace
 	void TestStaleFrontSequenceDoesNotPopReplacementCommand()
 	{
 		Command::InboxState state;
-		const auto         originalIdentity = MakeIdentity(7, 70, 700);
-		const auto         replacementIdentity = MakeIdentity(8, 80, 800);
+		const auto          originalIdentity = MakeIdentity(7, 70, 700);
+		const auto          replacementIdentity = MakeIdentity(8, 80, 800);
 
 		Expect(state.ObserveFile(originalIdentity, 4).shouldRead, "fresh inbox should read before stale-sequence coverage");
 		Expect(state.AppendChunk("cmd\n").extractedCount == 1, "original command should queue before replacement");

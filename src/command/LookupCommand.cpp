@@ -75,8 +75,8 @@ namespace Command
 {
 	std::vector<std::string> ExecuteLookupCommand(std::string_view arguments)
 	{
-		auto                   remaining = TrimAscii(arguments);
-		const auto             editorID = ConsumeToken(remaining);
+		auto                     remaining = TrimAscii(arguments);
+		const auto               editorID = ConsumeToken(remaining);
 		std::vector<std::string> responseLines;
 
 		if (editorID.empty() || !remaining.empty()) {

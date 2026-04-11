@@ -11,9 +11,11 @@ schema: spec-driven
 
 # Per-artifact rules (optional)
 rules:
+  design:
+    - MUST specify high signal, critical descisoins and assumptions only
+    - SHOULD not invent Risks / Trade-offs, Migration Plan, Open Questions if not absolutely necessary.
   tasks:
-    - Use tasks as the change completion ledger.
-    - Structure tasks around Implemented, Verified, and Deferred.
-    - Prefer completed-state checkpoints over forward coding instructions.
-    - Put build, test, and live-validation evidence under Verified.
-    - Put known carry-forward items intentionally left for later under Deferred.
+    - MUST be change completion ledger.
+    - MUST structure tasks around Implemented, Verified, and Deferred.
+    - MUST put build, test, and live-validation evidence under Verified.
+    - MUST put known carry-forward items intentionally left for later under Deferred.

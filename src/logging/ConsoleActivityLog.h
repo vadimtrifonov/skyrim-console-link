@@ -9,9 +9,9 @@
 namespace Logging
 {
 	[[nodiscard]] std::optional<std::string> InitializeConsoleActivityLog(const Config::Settings& settings);
-	void LogConsoleInputLine(std::string_view line) noexcept;
-	void LogConsoleOutputLine(std::string_view line) noexcept;
-	void LogConsoleSubmitLine(std::string_view line) noexcept;
-	void LogLocalLine(std::string_view line) noexcept;
-	void LogDisplayLine(std::string_view line) noexcept;
+	void                                     LogConsoleInputLine(std::string_view line) noexcept;
+	void                                     LogConsoleOutputLine(std::string_view line) noexcept;
+	void                                     LogConsoleSubmitLine(std::string_view line) noexcept;
+	void                                     LogLocalActivityLine(std::string_view line) noexcept;
+	void                                     LogConsolePrintLine(std::string_view line) noexcept;
 }

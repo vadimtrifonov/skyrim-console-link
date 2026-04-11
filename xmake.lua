@@ -58,7 +58,7 @@ target("ConsoleLink")
     add_rules("commonlibsse-ng.plugin", {
         name = "ConsoleLink",
         author = "ConsoleLink contributors",
-        description = "Skyrim console observability, display, and command submission debug helper",
+        description = "Skyrim console observability, print, and command submission debug helper",
         options = {
             address_library = true,
             struct_dependent = false
@@ -83,8 +83,8 @@ target("ConsoleLinkTests")
         "src/command/LookupCommand.cpp",
         "src/command/CommandSubmissionState.cpp",
         "src/command/InboxPath.cpp",
-        "src/display/DisplayState.cpp",
-        "src/display/OutboxPath.cpp",
+        "src/print/PrintState.cpp",
+        "src/print/OutboxPath.cpp",
         "tests/**.cpp"
     )
 

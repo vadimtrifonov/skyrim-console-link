@@ -2,8 +2,8 @@
 
 #include "command/InboxPath.h"
 #include "config/Settings.h"
-#include "display/OutboxPath.h"
 #include "pch.h"
+#include "print/OutboxPath.h"
 #include "runtime/Runtime.h"
 
 namespace
@@ -40,10 +40,10 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} display={} command_submission={} timestamps={}",
+			"Config input_logging={} output_logging={} print={} command_submission={} timestamps={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
-			loadResult.settings.enableConsoleDisplay,
+			loadResult.settings.enableConsolePrint,
 			loadResult.settings.enableConsoleCommandSubmission,
 			loadResult.settings.includeTimestamps);
 
@@ -52,7 +52,7 @@ namespace Bootstrap
 		const auto configuredInboxPath = loadResult.settings.inboxPath;
 		auto       runtimeInboxPath = configuredInboxPath;
 		const auto needsOutboxResolution =
-			loadResult.settings.enableConsoleDisplay &&
+			loadResult.settings.enableConsolePrint &&
 			!configuredOutboxPath.empty() &&
 			!configuredOutboxPath.is_absolute();
 		const auto needsInboxResolution =
@@ -69,7 +69,7 @@ namespace Bootstrap
 		}
 
 		if (needsOutboxResolution) {
-			const auto resolvedOutboxPath = Display::ResolveOutboxPath(configuredOutboxPath, *logDirectory);
+			const auto resolvedOutboxPath = Print::ResolveOutboxPath(configuredOutboxPath, *logDirectory);
 			runtimeOutboxPath = resolvedOutboxPath.resolvedPath;
 		}
 
@@ -78,10 +78,10 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config display_outbox_path='{}' resolved_display_outbox_path='{}' max_display_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_commands_per_tick={}",
+			"Config print_outbox_path='{}' resolved_print_outbox_path='{}' max_print_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_commands_per_tick={}",
 			configuredOutboxPath.string(),
 			runtimeOutboxPath.string(),
-			loadResult.settings.maxDisplayLinesPerTick,
+			loadResult.settings.maxPrintLinesPerTick,
 			configuredInboxPath.string(),
 			runtimeInboxPath.string(),
 			loadResult.settings.maxCommandsPerTick);
@@ -89,4 +89,3 @@ namespace Bootstrap
 		Runtime::Initialize(loadResult.settings, runtimeOutboxPath, runtimeInboxPath);
 	}
 }
-

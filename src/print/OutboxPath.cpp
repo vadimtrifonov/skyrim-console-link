@@ -1,10 +1,10 @@
-#include "display/OutboxPath.h"
+#include "print/OutboxPath.h"
 
 #include "pch.h"
 
 #include <system_error>
 
-namespace Display
+namespace Print
 {
 	ResolvedOutboxPath ResolveOutboxPath(
 		const std::filesystem::path& configuredPath,
@@ -27,4 +27,3 @@ namespace Display
 		return result;
 	}
 }
-

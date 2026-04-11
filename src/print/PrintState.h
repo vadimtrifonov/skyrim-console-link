@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace Display
+namespace Print
 {
 	struct OutboxFileIdentity
 	{
@@ -62,7 +62,7 @@ namespace Display
 
 	private:
 		[[nodiscard]] OutboxUpdateResult ResetState(OutboxResetReason reason);
-		void                            ExtractCompleteLines(OutboxUpdateResult& result);
+		void                             ExtractCompleteLines(OutboxUpdateResult& result);
 
 		std::size_t             _maxPendingLines = 0;
 		std::size_t             _maxPendingFragmentBytes = 0;

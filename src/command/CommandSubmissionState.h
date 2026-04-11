@@ -18,8 +18,8 @@ namespace Command
 		[[nodiscard]] bool operator==(const InboxFileIdentity& other) const noexcept
 		{
 			return volumeSerialNumber == other.volumeSerialNumber &&
-				fileIndexHigh == other.fileIndexHigh &&
-				fileIndexLow == other.fileIndexLow;
+			       fileIndexHigh == other.fileIndexHigh &&
+			       fileIndexLow == other.fileIndexLow;
 		}
 	};
 
@@ -72,14 +72,14 @@ namespace Command
 		[[nodiscard]] InboxUpdateResult ResetState(InboxResetReason reason);
 		void                            ExtractCompleteLines(InboxUpdateResult& result);
 
-		std::size_t                 _maxPendingCommands = 0;
-		std::size_t                 _maxPendingFragmentBytes = 0;
-		std::deque<PendingCommand>  _pendingCommands;
-		std::string                 _pendingFragment;
-		InboxFileIdentity           _fileIdentity{};
-		std::uint64_t               _fileCursor = 0;
-		std::uint64_t               _nextCommandSequence = 1;
-		bool                        _fileIdentityKnown = false;
+		std::size_t                _maxPendingCommands = 0;
+		std::size_t                _maxPendingFragmentBytes = 0;
+		std::deque<PendingCommand> _pendingCommands;
+		std::string                _pendingFragment;
+		InboxFileIdentity          _fileIdentity{};
+		std::uint64_t              _fileCursor = 0;
+		std::uint64_t              _nextCommandSequence = 1;
+		bool                       _fileIdentityKnown = false;
 	};
 
 	class WorkerStartState

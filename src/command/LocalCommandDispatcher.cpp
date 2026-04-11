@@ -1,9 +1,9 @@
 #include "command/LocalCommandDispatcher.h"
 
 #include "command/LookupCommand.h"
-#include "display/DisplayService.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
+#include "print/PrintService.h"
 
 #include <cctype>
 
@@ -51,8 +51,8 @@ namespace
 
 	void EmitLocalResponseLine(std::string_view line) noexcept
 	{
-		Logging::LogLocalLine(line);
-		static_cast<void>(Display::TryPrintImmediateLine(line));
+		Logging::LogLocalActivityLine(line);
+		static_cast<void>(Print::TryPrintImmediateLine(line));
 	}
 
 	void WarnLocalDispatchFailure(std::string_view message) noexcept
@@ -99,7 +99,7 @@ namespace Command
 				return LocalCommandDispatchResult::kDeferred;
 			}
 
-			Logging::LogLocalLine(commandLine);
+			Logging::LogLocalActivityLine(commandLine);
 
 			std::vector<std::string> responseLines;
 			switch (commandKind) {

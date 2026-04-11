@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace Display
+namespace Print
 {
 	struct ResolvedOutboxPath
 	{

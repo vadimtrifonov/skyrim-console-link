@@ -1,8 +1,8 @@
 #include "command/CommandSubmissionService.h"
 
 #include "capture/ConsoleInputCapture.h"
-#include "command/LocalCommandDispatcher.h"
 #include "command/CommandSubmissionState.h"
+#include "command/LocalCommandDispatcher.h"
 #include "pch.h"
 
 #include <Windows.h>
@@ -275,7 +275,7 @@ namespace
 
 			ClearFileErrorState();
 
-			const auto size = static_cast<std::uint64_t>(fileSize.QuadPart);
+			const auto                 size = static_cast<std::uint64_t>(fileSize.QuadPart);
 			Command::InboxUpdateResult observeResult{};
 			{
 				std::scoped_lock lock(_submissionStateLock);
@@ -519,7 +519,7 @@ namespace
 
 			if (deferred) {
 				_nextFlushAttemptAt = GetSteadyTickMillis() +
-					static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(kDeferredRetryInterval).count());
+				                      static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(kDeferredRetryInterval).count());
 			} else {
 				_nextFlushAttemptAt = 0;
 			}
@@ -568,24 +568,24 @@ namespace
 			_lastFileErrorOperation.clear();
 		}
 
-		Config::Settings      _settings{};
-		std::filesystem::path _inboxPath;
-		std::jthread          _worker;
-		std::mutex            _workerStartLock;
-		std::mutex            _submissionStateLock;
-		Command::InboxState   _inboxState;
+		Config::Settings          _settings{};
+		std::filesystem::path     _inboxPath;
+		std::jthread              _worker;
+		std::mutex                _workerStartLock;
+		std::mutex                _submissionStateLock;
+		Command::InboxState       _inboxState;
 		Command::WorkerStartState _workerStartState;
-		std::atomic_bool         _initialized = false;
-		std::atomic_bool         _serviceDisabled = false;
-		std::atomic_bool         _failureLogged = false;
-		std::atomic_bool         _flushScheduled = false;
-		std::atomic_bool         _dataLoaded = false;
-		std::atomic_uint64_t     _nextFlushAttemptAt = 0;
-		std::atomic_bool         _loggedMissingTaskInterface = false;
-		bool                     _loggedPendingQueueFull = false;
-		bool                     _loggedOversizedFragment = false;
-		DWORD                    _lastFileErrorCode = ERROR_SUCCESS;
-		std::string              _lastFileErrorOperation;
+		std::atomic_bool          _initialized = false;
+		std::atomic_bool          _serviceDisabled = false;
+		std::atomic_bool          _failureLogged = false;
+		std::atomic_bool          _flushScheduled = false;
+		std::atomic_bool          _dataLoaded = false;
+		std::atomic_uint64_t      _nextFlushAttemptAt = 0;
+		std::atomic_bool          _loggedMissingTaskInterface = false;
+		bool                      _loggedPendingQueueFull = false;
+		bool                      _loggedOversizedFragment = false;
+		DWORD                     _lastFileErrorCode = ERROR_SUCCESS;
+		std::string               _lastFileErrorOperation;
 	};
 }
 

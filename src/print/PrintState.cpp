@@ -1,10 +1,10 @@
-#include "display/DisplayState.h"
+#include "print/PrintState.h"
 
 #include <algorithm>
 
 namespace
 {
-	std::string TrimDisplayLine(std::string value)
+	std::string TrimPrintLine(std::string value)
 	{
 		while (!value.empty() && (value.back() == '\r' || value.back() == '\n')) {
 			value.pop_back();
@@ -13,7 +13,7 @@ namespace
 	}
 }
 
-namespace Display
+namespace Print
 {
 	OutboxState::OutboxState(const std::size_t maxPendingLines, const std::size_t maxPendingFragmentBytes) :
 		_maxPendingLines(maxPendingLines),
@@ -85,7 +85,7 @@ namespace Display
 
 	std::vector<std::string> OutboxState::DrainLines(const std::size_t maxLines)
 	{
-		const auto lineCount = std::min(_pendingLines.size(), maxLines);
+		const auto               lineCount = std::min(_pendingLines.size(), maxLines);
 		std::vector<std::string> lines;
 		lines.reserve(lineCount);
 		for (std::size_t index = 0; index < lineCount; ++index) {
@@ -117,7 +117,7 @@ namespace Display
 				break;
 			}
 
-			auto line = TrimDisplayLine(_pendingFragment.substr(0, newline));
+			auto line = TrimPrintLine(_pendingFragment.substr(0, newline));
 			_pendingFragment.erase(0, newline + 1);
 
 			if (!line.empty()) {

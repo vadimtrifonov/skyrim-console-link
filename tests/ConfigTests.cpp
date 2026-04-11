@@ -1,6 +1,6 @@
-#include "config/Settings.h"
 #include "command/InboxPath.h"
-#include "display/OutboxPath.h"
+#include "config/Settings.h"
+#include "print/OutboxPath.h"
 
 #include <Windows.h>
 
@@ -12,7 +12,8 @@
 #include <string_view>
 
 void RunCommandSubmissionStateTests();
-void RunDisplayStateTests();
+void RunConsoleActivityTaxonomyTests();
+void RunPrintStateTests();
 void RunLookupCommandTests();
 
 namespace
@@ -46,11 +47,11 @@ namespace
 
 		Expect(result.settings.enableConsoleInputLogging == defaults.enableConsoleInputLogging, "default input logging should be enabled");
 		Expect(result.settings.enableConsoleOutputLogging == defaults.enableConsoleOutputLogging, "default output logging should be enabled");
-		Expect(result.settings.enableConsoleDisplay == defaults.enableConsoleDisplay, "default display should be enabled");
+		Expect(result.settings.enableConsolePrint == defaults.enableConsolePrint, "default print should be enabled");
 		Expect(result.settings.enableConsoleCommandSubmission == defaults.enableConsoleCommandSubmission, "default command submission mismatch");
 		Expect(result.settings.includeTimestamps == defaults.includeTimestamps, "default timestamps should be enabled");
 		Expect(result.settings.outboxPath == defaults.outboxPath, "default outbox path mismatch");
-		Expect(result.settings.maxDisplayLinesPerTick == defaults.maxDisplayLinesPerTick, "default max display lines per tick mismatch");
+		Expect(result.settings.maxPrintLinesPerTick == defaults.maxPrintLinesPerTick, "default max print lines per tick mismatch");
 		Expect(result.settings.inboxPath == defaults.inboxPath, "default inbox path mismatch");
 		Expect(result.settings.maxCommandsPerTick == defaults.maxCommandsPerTick, "default max commands per tick mismatch");
 		Expect(result.warnings.empty(), "missing config should not produce warnings");
@@ -64,13 +65,13 @@ namespace
 			"[Main]\n"
 			"EnableConsoleInputLogging = false\n"
 			"EnableConsoleOutputLogging = no\n"
-			"EnableConsoleDisplay = off\n"
+			"EnableConsolePrint = off\n"
 			"EnableConsoleCommandSubmission = true\n"
 			"\n"
 			"[Logging]\n"
 			"IncludeTimestamps = 0\n"
 			"\n"
-			"[Display]\n"
+			"[Print]\n"
 			"OutboxPath = Alt.outbox.txt\n"
 			"MaxLinesPerTick = 3\n"
 			"\n"
@@ -82,11 +83,11 @@ namespace
 
 		Expect(!result.settings.enableConsoleInputLogging, "override input logging mismatch");
 		Expect(!result.settings.enableConsoleOutputLogging, "override output logging mismatch");
-		Expect(!result.settings.enableConsoleDisplay, "override display mismatch");
+		Expect(!result.settings.enableConsolePrint, "override print mismatch");
 		Expect(result.settings.enableConsoleCommandSubmission, "override command submission mismatch");
 		Expect(!result.settings.includeTimestamps, "override timestamps mismatch");
 		Expect(result.settings.outboxPath == std::filesystem::path(L"Alt.outbox.txt"), "override outbox path mismatch");
-		Expect(result.settings.maxDisplayLinesPerTick == 3, "override max display lines per tick mismatch");
+		Expect(result.settings.maxPrintLinesPerTick == 3, "override max print lines per tick mismatch");
 		Expect(result.settings.inboxPath == std::filesystem::path(L"Alt.inbox.txt"), "override inbox path mismatch");
 		Expect(result.settings.maxCommandsPerTick == 2, "override max commands per tick mismatch");
 		Expect(result.warnings.empty(), "valid config should not produce warnings");
@@ -102,7 +103,7 @@ namespace
 			"[Main]\n"
 			"EnableConsoleInputLogging = maybe\n"
 			"\n"
-			"[Display]\n"
+			"[Print]\n"
 			"MaxLinesPerTick = nope\n"
 			"\n"
 			"[CommandSubmission]\n"
@@ -111,7 +112,7 @@ namespace
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
 		Expect(result.settings.enableConsoleInputLogging, "malformed bool should fall back to default");
-		Expect(result.settings.maxDisplayLinesPerTick == 8, "malformed uint should fall back to default");
+		Expect(result.settings.maxPrintLinesPerTick == 8, "malformed uint should fall back to default");
 		Expect(result.settings.maxCommandsPerTick == 4, "malformed command uint should fall back to default");
 		Expect(result.warnings.size() == 3, "expected malformed warnings");
 
@@ -123,29 +124,29 @@ namespace
 		const auto path = MakeTempIniPath();
 		WriteFile(
 			path,
-			"[Display]\n"
+			"[Print]\n"
 			"MaxLinesPerTick = 4\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
-		Expect(result.settings.enableConsoleDisplay, "missing outbox path should not disable display");
+		Expect(result.settings.enableConsolePrint, "missing outbox path should not disable print");
 		Expect(result.settings.outboxPath == Config::GetDefaultOutboxPath(), "missing outbox path should use the default");
 		Expect(result.warnings.empty(), "missing outbox path should not produce warnings");
 
 		std::filesystem::remove(path);
 	}
 
-	void TestEmptyOutboxPathDisablesDisplay()
+	void TestEmptyOutboxPathDisablesPrint()
 	{
 		const auto path = MakeTempIniPath();
 		WriteFile(
 			path,
-			"[Display]\n"
+			"[Print]\n"
 			"OutboxPath =   \n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
-		Expect(!result.settings.enableConsoleDisplay, "empty outbox path should disable display");
+		Expect(!result.settings.enableConsolePrint, "empty outbox path should disable print");
 		Expect(result.settings.outboxPath.empty(), "empty outbox path should not keep a usable path");
 		Expect(result.warnings.size() == 1, "expected one warning for empty outbox path");
 
@@ -172,19 +173,19 @@ namespace
 		std::filesystem::remove(path);
 	}
 
-	void TestOversizedOutboxPathDisablesDisplay()
+	void TestOversizedOutboxPathDisablesPrint()
 	{
 		const auto path = MakeTempIniPath();
 		const auto oversizedPath = std::string(600, 'A');
 		WriteFile(
 			path,
-			"[Display]\n"
+			"[Print]\n"
 			"OutboxPath = " +
 				oversizedPath + "\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
-		Expect(!result.settings.enableConsoleDisplay, "oversized outbox path should disable display");
+		Expect(!result.settings.enableConsolePrint, "oversized outbox path should disable print");
 		Expect(result.settings.outboxPath.empty(), "oversized outbox path should not keep a usable path");
 		Expect(result.warnings.size() == 1, "expected one warning for oversized outbox path");
 
@@ -217,7 +218,7 @@ namespace
 	{
 		const std::filesystem::path configured = L"ConsoleLink.outbox.txt";
 		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Display::ResolveOutboxPath(configured, logDirectory);
+		const auto                  result = Print::ResolveOutboxPath(configured, logDirectory);
 
 		Expect(result.configuredPath == configured, "relative configured outbox path mismatch");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative outbox path should resolve under the log directory");
@@ -241,14 +242,15 @@ int main()
 		TestOverrides();
 		TestMalformedFallbacks();
 		TestMissingOutboxPathUsesDefault();
-		TestEmptyOutboxPathDisablesDisplay();
+		TestEmptyOutboxPathDisablesPrint();
 		TestEmptyInboxPathDisablesCommandSubmission();
-		TestOversizedOutboxPathDisablesDisplay();
+		TestOversizedOutboxPathDisablesPrint();
 		TestOversizedInboxPathDisablesCommandSubmission();
 		TestRelativeOutboxPathResolvesUnderLogDirectory();
 		TestRelativeInboxPathResolvesUnderLogDirectory();
 		RunCommandSubmissionStateTests();
-		RunDisplayStateTests();
+		RunConsoleActivityTaxonomyTests();
+		RunPrintStateTests();
 		RunLookupCommandTests();
 		std::cout << "All tests passed.\n";
 		return 0;
@@ -257,4 +259,3 @@ int main()
 		return 1;
 	}
 }
-

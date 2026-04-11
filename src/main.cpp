@@ -55,4 +55,3 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 
 	return false;
 }
-

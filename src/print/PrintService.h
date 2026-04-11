@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <string_view>
 
-namespace Display
+namespace Print
 {
 	enum class ImmediatePrintResult
 	{
@@ -14,6 +14,6 @@ namespace Display
 		kDisabled
 	};
 
-	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
+	void                               Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
 	[[nodiscard]] ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept;
 }

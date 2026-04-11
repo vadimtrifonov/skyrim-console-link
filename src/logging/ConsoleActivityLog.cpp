@@ -1,4 +1,5 @@
 #include "logging/ConsoleActivityLog.h"
+#include "logging/ConsoleActivityTaxonomy.h"
 
 #include <SKSE/SKSE.h>
 
@@ -18,11 +19,6 @@ namespace
 	std::atomic_bool                g_consoleActivityDisabled = false;
 	std::atomic_bool                g_consoleActivityFailureLogged = false;
 
-	std::string BuildRecord(std::string_view channel, std::string_view line)
-	{
-		return "[" + std::string(channel) + "] " + std::string(line);
-	}
-
 	void DisableConsoleActivityLogging(std::string_view reason) noexcept
 	{
 		g_consoleActivityDisabled = true;
@@ -40,14 +36,14 @@ namespace
 		}
 	}
 
-	void LogConsoleActivityLine(std::string_view channel, std::string_view line) noexcept
+	void LogConsoleActivityLine(const Logging::ConsoleActivityKind kind, std::string_view line) noexcept
 	{
 		if (g_consoleActivityDisabled.load()) {
 			return;
 		}
 
 		try {
-			const auto record = BuildRecord(channel, line);
+			const auto                      record = Logging::BuildConsoleActivityRecord(kind, line);
 			std::shared_ptr<spdlog::logger> logger;
 			{
 				std::scoped_lock lock(g_consoleLogLock);
@@ -102,27 +98,26 @@ namespace Logging
 
 	void LogConsoleOutputLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine("console-out", line);
+		LogConsoleActivityLine(ConsoleActivityKind::kObservedConsoleOutput, line);
 	}
 
 	void LogConsoleInputLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine("console-in", line);
+		LogConsoleActivityLine(ConsoleActivityKind::kObservedConsoleInput, line);
 	}
 
 	void LogConsoleSubmitLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine("console-submit", line);
+		LogConsoleActivityLine(ConsoleActivityKind::kSubmittedConsoleCommand, line);
 	}
 
-	void LogLocalLine(std::string_view line) noexcept
+	void LogLocalActivityLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine("console-local", line);
+		LogConsoleActivityLine(ConsoleActivityKind::kLocalCommandActivity, line);
 	}
 
-	void LogDisplayLine(std::string_view line) noexcept
+	void LogConsolePrintLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine("console-display", line);
+		LogConsoleActivityLine(ConsoleActivityKind::kPrintedConsoleLine, line);
 	}
 }
-

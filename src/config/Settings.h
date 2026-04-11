@@ -11,13 +11,13 @@ namespace Config
 	{
 		bool enableConsoleInputLogging = true;
 		bool enableConsoleOutputLogging = true;
-		bool enableConsoleDisplay = true;
+		bool enableConsolePrint = true;
 		bool enableConsoleCommandSubmission = true;
 
 		bool includeTimestamps = true;
 
 		std::filesystem::path outboxPath = L"ConsoleLink.outbox.txt";
-		std::uint32_t         maxDisplayLinesPerTick = 8;
+		std::uint32_t         maxPrintLinesPerTick = 8;
 		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
 		std::uint32_t         maxCommandsPerTick = 4;
 	};
@@ -36,4 +36,3 @@ namespace Config
 	[[nodiscard]] Settings              LoadSettings(const std::filesystem::path& path);
 	[[nodiscard]] Settings              LoadDefaultSettings();
 }
-

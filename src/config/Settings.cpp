@@ -106,7 +106,7 @@ namespace
 	}
 
 	ReadEntryResult ReadFirstPresentRawValue(
-		const std::filesystem::path&           path,
+		const std::filesystem::path&    path,
 		std::initializer_list<IniEntry> entries)
 	{
 		const auto fallbackEntry = entries.begin() != entries.end() ? *entries.begin() : IniEntry{};
@@ -294,15 +294,15 @@ namespace Config
 
 		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
 		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
-		applyBool({ { L"Main", L"EnableConsoleDisplay" } }, &Settings::enableConsoleDisplay);
+		applyBool({ { L"Main", L"EnableConsolePrint" } }, &Settings::enableConsolePrint);
 		applyBool({ { L"Main", L"EnableConsoleCommandSubmission" } }, &Settings::enableConsoleCommandSubmission);
 		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
 		applyPath(
-			{ { L"Display", L"OutboxPath" } },
+			{ { L"Print", L"OutboxPath" } },
 			&Settings::outboxPath,
-			&Settings::enableConsoleDisplay,
-			"console display");
-		applyUInt32({ { L"Display", L"MaxLinesPerTick" } }, &Settings::maxDisplayLinesPerTick);
+			&Settings::enableConsolePrint,
+			"console print");
+		applyUInt32({ { L"Print", L"MaxLinesPerTick" } }, &Settings::maxPrintLinesPerTick);
 		applyPath(
 			{ { L"CommandSubmission", L"InboxPath" } },
 			&Settings::inboxPath,
@@ -323,4 +323,3 @@ namespace Config
 		return LoadSettings(GetDefaultSettingsPath());
 	}
 }
-

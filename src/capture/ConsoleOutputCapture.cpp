@@ -23,14 +23,14 @@ namespace
 	constexpr ValidatedOutputHookSite kVPrintHookSite{
 		"Skyrim VR",
 		{ 0x48, 0x8B, 0xC4, 0x57, 0x41, 0x54, 0x41, 0x55,
-		  0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x40 },
+			0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x40 },
 		16
 	};
 
 	constexpr std::size_t kAbsoluteJumpSize = 14;
 	constexpr std::size_t kMaxCapturedLineBytes = 4096;
 
-	VPrint_t g_originalVPrint = nullptr;
+	VPrint_t         g_originalVPrint = nullptr;
 	std::atomic_bool g_loggedFormatFailure = false;
 	std::atomic_bool g_loggedTruncation = false;
 	std::atomic_bool g_pluginCaptureDisabled = false;
@@ -101,7 +101,7 @@ namespace
 		}
 
 		std::array<char, kMaxCapturedLineBytes + 1> buffer{};
-		const auto written = std::vsnprintf(buffer.data(), buffer.size(), format, args);
+		const auto                                  written = std::vsnprintf(buffer.data(), buffer.size(), format, args);
 		if (written < 0) {
 			if (!g_loggedFormatFailure.exchange(true)) {
 				WarnBestEffort("Passive console output capture failed to format a ConsoleLog::VPrint line; later failures will be suppressed");

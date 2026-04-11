@@ -1,10 +1,10 @@
-#include "display/DisplayService.h"
+#include "print/PrintService.h"
 
 // clang-format off
 #include "pch.h"
 #include "RE/C/ConsoleLog.h"
 #include "console/ConsoleActivityPolicy.h"
-#include "display/DisplayState.h"
+#include "print/PrintState.h"
 #include "logging/ConsoleActivityLog.h"
 // clang-format on
 
@@ -17,7 +17,7 @@ namespace
 
 	constexpr auto        kPollInterval = 200ms;
 	constexpr std::size_t kMaxReadBytesPerPoll = 64 * 1024;
-	constexpr auto        kDisplayPrefix = "ConsoleLink:";
+	constexpr auto        kConsolePrintPrefix = "ConsoleLink:";
 
 	class ScopedHandle
 	{
@@ -42,7 +42,7 @@ namespace
 		HANDLE _handle{ INVALID_HANDLE_VALUE };
 	};
 
-	bool TryGetFileIdentity(HANDLE handle, Display::OutboxFileIdentity& identity, DWORD& errorCode) noexcept
+	bool TryGetFileIdentity(HANDLE handle, Print::OutboxFileIdentity& identity, DWORD& errorCode) noexcept
 	{
 		BY_HANDLE_FILE_INFORMATION info{};
 		if (!::GetFileInformationByHandle(handle, &info)) {
@@ -110,30 +110,30 @@ namespace
 
 	std::string BuildConsoleLine(std::string_view line)
 	{
-		return std::string(kDisplayPrefix) + " " + std::string(line);
+		return std::string(kConsolePrintPrefix) + " " + std::string(line);
 	}
 
-	std::string_view DescribeResetReason(const Display::OutboxResetReason reason) noexcept
+	std::string_view DescribeResetReason(const Print::OutboxResetReason reason) noexcept
 	{
 		switch (reason) {
-		case Display::OutboxResetReason::kRemoved:
+		case Print::OutboxResetReason::kRemoved:
 			return "was removed";
-		case Display::OutboxResetReason::kTruncated:
+		case Print::OutboxResetReason::kTruncated:
 			return "was truncated";
-		case Display::OutboxResetReason::kReplaced:
+		case Print::OutboxResetReason::kReplaced:
 			return "was atomically replaced";
-		case Display::OutboxResetReason::kNone:
+		case Print::OutboxResetReason::kNone:
 		default:
 			return "";
 		}
 	}
 
-	class DisplayService
+	class PrintService
 	{
 	public:
-		static DisplayService& GetSingleton()
+		static PrintService& GetSingleton()
 		{
-			static DisplayService service;
+			static PrintService service;
 			return service;
 		}
 
@@ -145,15 +145,15 @@ namespace
 			}
 
 			if (!REL::Module::IsVR()) {
-				logs::warn("Skipping console display: the first implementation slice is VR-only");
+				logs::warn("Skipping console print: the first implementation slice is VR-only");
 				return;
 			}
 
 			_settings = settings;
-			_displayEnabled = settings.enableConsoleDisplay;
+			_printEnabled = settings.enableConsolePrint;
 
-			if (!_displayEnabled) {
-				logs::info("Console display is disabled; outbox service will remain dormant");
+			if (!_printEnabled) {
+				logs::info("Console print is disabled; outbox service will remain dormant");
 				return;
 			}
 
@@ -161,50 +161,50 @@ namespace
 
 			const auto* messaging = SKSE::GetMessagingInterface();
 			if (messaging == nullptr) {
-				logs::warn("Skipping console display: SKSE messaging interface is unavailable");
+				logs::warn("Skipping console print: SKSE messaging interface is unavailable");
 				return;
 			}
 
 			if (!messaging->RegisterListener(MessageHandler)) {
-				logs::warn("Skipping console display: failed to register the SKSE messaging listener");
+				logs::warn("Skipping console print: failed to register the SKSE messaging listener");
 				return;
 			}
 
 			_listenerRegistered = true;
-			logs::info("Console display watching '{}'", PathToString(_outboxPath));
+			logs::info("Console print watching '{}'", PathToString(_outboxPath));
 		}
 
-		Display::ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept
+		Print::ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept
 		{
-			if (!_displayEnabled) {
-				return Display::ImmediatePrintResult::kDisabled;
+			if (!_printEnabled) {
+				return Print::ImmediatePrintResult::kDisabled;
 			}
 
 			try {
 				auto* consoleLog = RE::ConsoleLog::GetSingleton();
 				if (consoleLog == nullptr) {
-					return Display::ImmediatePrintResult::kUnavailable;
+					return Print::ImmediatePrintResult::kUnavailable;
 				}
 
-				const auto consoleLine = BuildConsoleLine(line);
+				const auto                         consoleLine = BuildConsoleLine(line);
 				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
-				return Display::ImmediatePrintResult::kPrinted;
+				return Print::ImmediatePrintResult::kPrinted;
 			} catch (const std::exception& exception) {
 				try {
-					logs::warn("Direct console display failed: {}", exception.what());
+					logs::warn("Direct console print failed: {}", exception.what());
 				} catch (...) {
-					// Intentionally swallow logger failures so direct display remains fail-soft.
+					// Intentionally swallow logger failures so direct print remains fail-soft.
 				}
 			} catch (...) {
 				try {
-					logs::warn("Direct console display failed");
+					logs::warn("Direct console print failed");
 				} catch (...) {
-					// Intentionally swallow logger failures so direct display remains fail-soft.
+					// Intentionally swallow logger failures so direct print remains fail-soft.
 				}
 			}
 
-			return Display::ImmediatePrintResult::kUnavailable;
+			return Print::ImmediatePrintResult::kUnavailable;
 		}
 
 	private:
@@ -242,7 +242,7 @@ namespace
 
 				_worker = std::move(worker);
 				_workerStarted = true;
-				logs::info("Starting console display worker thread");
+				logs::info("Starting console print worker thread");
 			} catch (const std::exception& exception) {
 				DisableService("worker startup failure", exception.what());
 			} catch (...) {
@@ -277,7 +277,7 @@ namespace
 			if (handle.get() == INVALID_HANDLE_VALUE) {
 				const auto error = ::GetLastError();
 				if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND) {
-					Display::OutboxUpdateResult updateResult{};
+					Print::OutboxUpdateResult updateResult{};
 					{
 						std::scoped_lock lock(_queueLock);
 						updateResult = _outboxState.ObserveMissingFile();
@@ -297,8 +297,8 @@ namespace
 				return;
 			}
 
-			Display::OutboxFileIdentity identity{};
-			DWORD                      identityError = ERROR_SUCCESS;
+			Print::OutboxFileIdentity identity{};
+			DWORD                     identityError = ERROR_SUCCESS;
 			if (!TryGetFileIdentity(handle.get(), identity, identityError)) {
 				ReportFileError("identity", identityError);
 				return;
@@ -306,9 +306,9 @@ namespace
 
 			ClearFileErrorState();
 
-			auto                       cursor = std::uint64_t{};
-			const auto                 size = static_cast<std::uint64_t>(fileSize.QuadPart);
-			Display::OutboxUpdateResult observeResult{};
+			auto                      cursor = std::uint64_t{};
+			const auto                size = static_cast<std::uint64_t>(fileSize.QuadPart);
+			Print::OutboxUpdateResult observeResult{};
 			{
 				std::scoped_lock lock(_queueLock);
 				observeResult = _outboxState.ObserveFile(identity, size);
@@ -341,7 +341,7 @@ namespace
 
 			chunk.resize(bytesRead);
 
-			Display::OutboxUpdateResult appendResult{};
+			Print::OutboxUpdateResult appendResult{};
 			{
 				std::scoped_lock lock(_queueLock);
 				appendResult = _outboxState.AppendChunk(chunk);
@@ -349,18 +349,18 @@ namespace
 			LogOutboxUpdate(appendResult);
 		}
 
-		void LogOutboxUpdate(const Display::OutboxUpdateResult& result)
+		void LogOutboxUpdate(const Print::OutboxUpdateResult& result)
 		{
-			if (result.resetReason != Display::OutboxResetReason::kNone) {
+			if (result.resetReason != Print::OutboxResetReason::kNone) {
 				if (result.droppedPendingLines > 0) {
 					logs::info(
-						"Display outbox file '{}' {}; cleared {} queued display line(s) and reset the read cursor",
+						"Console print outbox file '{}' {}; cleared {} queued print line(s) and reset the read cursor",
 						PathToString(_outboxPath),
 						DescribeResetReason(result.resetReason),
 						result.droppedPendingLines);
 				} else {
 					logs::info(
-						"Display outbox file '{}' {}; reset the read cursor",
+						"Console print outbox file '{}' {}; reset the read cursor",
 						PathToString(_outboxPath),
 						DescribeResetReason(result.resetReason));
 				}
@@ -368,7 +368,7 @@ namespace
 
 			if (result.extractedCount > 0) {
 				logs::info(
-					"Queued {} display line(s) from '{}'; pending={}",
+					"Queued {} print line(s) from '{}'; pending={}",
 					result.extractedCount,
 					PathToString(_outboxPath),
 					result.pendingCount);
@@ -377,7 +377,7 @@ namespace
 			if (result.queueAtCapacity) {
 				if (!_loggedPendingQueueFull) {
 					logs::warn(
-						"Pausing display outbox ingestion for '{}' because the pending display queue reached {}; buffered lines will wait until the queue drains",
+						"Pausing console print outbox ingestion for '{}' because the pending print queue reached {}; buffered lines will wait until the queue drains",
 						PathToString(_outboxPath),
 						_outboxState.MaxPendingLines());
 					_loggedPendingQueueFull = true;
@@ -389,7 +389,7 @@ namespace
 			if (result.oversizedFragmentBytes > 0) {
 				if (!_loggedOversizedFragment) {
 					logs::warn(
-						"Discarding an oversized partial display line from '{}' after {} bytes without a newline",
+						"Discarding an oversized partial print line from '{}' after {} bytes without a newline",
 						PathToString(_outboxPath),
 						result.oversizedFragmentBytes);
 					_loggedOversizedFragment = true;
@@ -417,7 +417,7 @@ namespace
 			if (taskInterface == nullptr) {
 				_flushScheduled = false;
 				if (!_loggedMissingTaskInterface.exchange(true)) {
-					logs::warn("Console display is waiting for the SKSE task interface");
+					logs::warn("Console print is waiting for the SKSE task interface");
 				}
 				return;
 			}
@@ -426,11 +426,11 @@ namespace
 			try {
 				taskInterface->AddTask([] {
 					try {
-						DisplayService::GetSingleton().FlushOnGameThread();
+						PrintService::GetSingleton().FlushOnGameThread();
 					} catch (const std::exception& exception) {
-						DisplayService::GetSingleton().DisableService("game-thread flush failure", exception.what());
+						PrintService::GetSingleton().DisableService("game-thread flush failure", exception.what());
 					} catch (...) {
-						DisplayService::GetSingleton().DisableService("game-thread flush failure", "unknown exception");
+						PrintService::GetSingleton().DisableService("game-thread flush failure", "unknown exception");
 					}
 				});
 			} catch (const std::exception& exception) {
@@ -456,7 +456,7 @@ namespace
 			auto* consoleLog = RE::ConsoleLog::GetSingleton();
 			if (consoleLog == nullptr) {
 				if (!_loggedConsoleUnavailable) {
-					logs::warn("Console display is holding pending lines because RE::ConsoleLog is not available yet");
+					logs::warn("Console print is holding pending lines because RE::ConsoleLog is not available yet");
 					_loggedConsoleUnavailable = true;
 				}
 				_flushScheduled = false;
@@ -468,19 +468,19 @@ namespace
 			std::vector<std::string> lines;
 			{
 				std::scoped_lock lock(_queueLock);
-				const auto       lineBudget = std::max<std::uint32_t>(_settings.maxDisplayLinesPerTick, 1);
+				const auto       lineBudget = std::max<std::uint32_t>(_settings.maxPrintLinesPerTick, 1);
 				lines = _outboxState.DrainLines(lineBudget);
 			}
 
 			if (!lines.empty()) {
-				logs::info("Flushing {} console display line(s)", lines.size());
+				logs::info("Flushing {} console print line(s)", lines.size());
 			}
 
 			for (const auto& line : lines) {
-				const auto consoleLine = BuildConsoleLine(line);
+				const auto                         consoleLine = BuildConsoleLine(line);
 				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
-				Logging::LogDisplayLine(consoleLine);
+				Logging::LogConsolePrintLine(consoleLine);
 			}
 
 			_flushScheduled = false;
@@ -496,7 +496,7 @@ namespace
 			_lastFileErrorCode = errorCode;
 			_lastFileErrorOperation = std::string(operation);
 			logs::warn(
-				"Console display {} failed for '{}': win32={} {}",
+				"Console print {} failed for '{}': win32={} {}",
 				operation,
 				PathToString(_outboxPath),
 				errorCode,
@@ -519,44 +519,43 @@ namespace
 			}
 
 			try {
-				logs::warn("Disabling console display service after {}: {}", context, reason);
+				logs::warn("Disabling console print service after {}: {}", context, reason);
 			} catch (...) {
 				// Intentionally swallow logger failures so async boundaries remain fail-soft.
 			}
 		}
 
-		Config::Settings        _settings{};
-		std::filesystem::path   _outboxPath;
-		std::jthread            _worker;
-		std::mutex              _workerStartLock;
-		std::mutex              _queueLock;
-		Display::OutboxState    _outboxState;
-		std::atomic_bool        _initialized = false;
-		bool                    _displayEnabled = false;
-		std::atomic_bool        _serviceDisabled = false;
-		std::atomic_bool        _failureLogged = false;
-		std::atomic_bool        _flushScheduled = false;
-		bool                    _workerStarted = false;
-		bool                    _listenerRegistered = false;
-		bool                    _loggedConsoleUnavailable = false;
-		std::atomic_bool        _loggedMissingTaskInterface = false;
-		bool                    _loggedPendingQueueFull = false;
-		bool                    _loggedOversizedFragment = false;
-		DWORD                   _lastFileErrorCode = ERROR_SUCCESS;
-		std::string             _lastFileErrorOperation;
+		Config::Settings      _settings{};
+		std::filesystem::path _outboxPath;
+		std::jthread          _worker;
+		std::mutex            _workerStartLock;
+		std::mutex            _queueLock;
+		Print::OutboxState    _outboxState;
+		std::atomic_bool      _initialized = false;
+		bool                  _printEnabled = false;
+		std::atomic_bool      _serviceDisabled = false;
+		std::atomic_bool      _failureLogged = false;
+		std::atomic_bool      _flushScheduled = false;
+		bool                  _workerStarted = false;
+		bool                  _listenerRegistered = false;
+		bool                  _loggedConsoleUnavailable = false;
+		std::atomic_bool      _loggedMissingTaskInterface = false;
+		bool                  _loggedPendingQueueFull = false;
+		bool                  _loggedOversizedFragment = false;
+		DWORD                 _lastFileErrorCode = ERROR_SUCCESS;
+		std::string           _lastFileErrorOperation;
 	};
 }
 
-namespace Display
+namespace Print
 {
 	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath)
 	{
-		DisplayService::GetSingleton().Initialize(settings, outboxPath);
+		PrintService::GetSingleton().Initialize(settings, outboxPath);
 	}
 
 	ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept
 	{
-		return DisplayService::GetSingleton().TryPrintImmediateLine(line);
+		return PrintService::GetSingleton().TryPrintImmediateLine(line);
 	}
 }
-

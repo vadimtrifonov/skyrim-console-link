@@ -41,10 +41,10 @@ namespace
 	constexpr ValidatedInputHookSite kExecuteCommandHookSite{
 		"Skyrim VR",
 		{ 0x40, 0x53,
-		  0x56,
-		  0x57,
-		  0x48, 0x83, 0xEC, 0x30,
-		  0x48, 0xC7, 0x44, 0x24, 0x20, 0xFE, 0xFF, 0xFF, 0xFF },
+			0x56,
+			0x57,
+			0x48, 0x83, 0xEC, 0x30,
+			0x48, 0xC7, 0x44, 0x24, 0x20, 0xFE, 0xFF, 0xFF, 0xFF },
 		17,
 		0x00885100
 	};
@@ -188,15 +188,15 @@ namespace
 		}
 
 		std::string converted(static_cast<std::size_t>(required), '\0');
-		const auto written = ::WideCharToMultiByte(
-			CP_UTF8,
-			0,
-			value.data(),
-			static_cast<int>(value.size()),
-			converted.data(),
-			required,
-			nullptr,
-			nullptr);
+		const auto  written = ::WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            value.data(),
+            static_cast<int>(value.size()),
+            converted.data(),
+            required,
+            nullptr,
+            nullptr);
 		if (written <= 0) {
 			return std::nullopt;
 		}
@@ -276,7 +276,7 @@ namespace
 	void HookedExecuteCommand(const RE::FxDelegateArgs& args)
 	{
 		CommandExtractionResult extraction;
-		std::string command;
+		std::string             command;
 		if (!g_pluginCaptureDisabled.load()) {
 			try {
 				extraction = ExtractCommandText(args);

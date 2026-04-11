@@ -3,9 +3,9 @@
 #include "capture/ConsoleInputCapture.h"
 #include "capture/ConsoleOutputCapture.h"
 #include "command/CommandSubmissionService.h"
-#include "display/DisplayService.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
+#include "print/PrintService.h"
 
 namespace
 {
@@ -52,10 +52,10 @@ namespace Runtime
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
-			"Feature state input_logging={} output_logging={} display={} command_submission={}",
+			"Feature state input_logging={} output_logging={} print={} command_submission={}",
 			settings.enableConsoleInputLogging,
 			settings.enableConsoleOutputLogging,
-			settings.enableConsoleDisplay,
+			settings.enableConsolePrint,
 			settings.enableConsoleCommandSubmission);
 
 		if (const auto error = Logging::InitializeConsoleActivityLog(settings)) {
@@ -71,8 +71,7 @@ namespace Runtime
 
 		Capture::Output::Install(settings);
 		Capture::Input::Install(settings);
-		Display::Initialize(settings, outboxPath);
+		Print::Initialize(settings, outboxPath);
 		Command::Initialize(settings, inboxPath);
 	}
 }
-
