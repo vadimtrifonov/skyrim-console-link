@@ -11,6 +11,7 @@ description: Build, deploy, verify, and troubleshoot ConsoleLink in Skyrim VR. U
 - First `xmake` configure may need package/network access.
 - Build: `.\scripts\Build.ps1 -Mode debug -IncludeTests`
 - Test: `.\scripts\Test.ps1 -Mode debug`
+- Check: `.\scripts\Check.ps1 -Strict`
 - Package: `.\scripts\Package.ps1 -Mode debug`
 - Deploy: `.\scripts\Deploy.ps1 -Target <MO2 mod path> -Mode debug`
 

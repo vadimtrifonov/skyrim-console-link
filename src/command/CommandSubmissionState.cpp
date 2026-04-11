@@ -15,9 +15,9 @@ namespace
 
 namespace Command
 {
-	InboxState::InboxState(const std::size_t maxPendingCommands, const std::size_t maxPendingFragmentBytes) :
-		_maxPendingCommands(maxPendingCommands),
-		_maxPendingFragmentBytes(maxPendingFragmentBytes)
+	InboxState::InboxState(const InboxStateLimits limits) :
+		_maxPendingCommands(limits.maxPendingCommands),
+		_maxPendingFragmentBytes(limits.maxPendingFragmentBytes)
 	{}
 
 	InboxUpdateResult InboxState::ObserveMissingFile()

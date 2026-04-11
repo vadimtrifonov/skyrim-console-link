@@ -44,12 +44,16 @@ namespace Print
 		bool              shouldRead = false;
 	};
 
+	struct OutboxStateLimits
+	{
+		std::size_t maxPendingLines = 256;
+		std::size_t maxPendingFragmentBytes = 8 * 1024;
+	};
+
 	class OutboxState
 	{
 	public:
-		explicit OutboxState(
-			std::size_t maxPendingLines = 256,
-			std::size_t maxPendingFragmentBytes = 8 * 1024);
+		explicit OutboxState(OutboxStateLimits limits = {});
 
 		[[nodiscard]] OutboxUpdateResult ObserveMissingFile();
 		[[nodiscard]] OutboxUpdateResult ObserveFile(const OutboxFileIdentity& identity, std::uint64_t fileSize);

@@ -6,6 +6,13 @@
 
 namespace
 {
+	struct FileIdentityParts
+	{
+		std::uint32_t volumeSerialNumber;
+		std::uint32_t fileIndexHigh;
+		std::uint32_t fileIndexLow;
+	};
+
 	void Expect(bool condition, std::string_view message)
 	{
 		if (!condition) {
@@ -13,15 +20,12 @@ namespace
 		}
 	}
 
-	Command::InboxFileIdentity MakeIdentity(
-		const std::uint32_t volumeSerialNumber,
-		const std::uint32_t fileIndexHigh,
-		const std::uint32_t fileIndexLow)
+	Command::InboxFileIdentity MakeIdentity(const FileIdentityParts parts)
 	{
 		Command::InboxFileIdentity identity{};
-		identity.volumeSerialNumber = volumeSerialNumber;
-		identity.fileIndexHigh = fileIndexHigh;
-		identity.fileIndexLow = fileIndexLow;
+		identity.volumeSerialNumber = parts.volumeSerialNumber;
+		identity.fileIndexHigh = parts.fileIndexHigh;
+		identity.fileIndexLow = parts.fileIndexLow;
 		return identity;
 	}
 
@@ -42,8 +46,8 @@ namespace
 	void TestInboxReplacementResetsFromNewHead()
 	{
 		Command::InboxState state;
-		const auto          originalIdentity = MakeIdentity(1, 10, 100);
-		const auto          replacementIdentity = MakeIdentity(2, 20, 200);
+		const auto          originalIdentity = MakeIdentity({ 1, 10, 100 });
+		const auto          replacementIdentity = MakeIdentity({ 2, 20, 200 });
 
 		const auto observeOriginal = state.ObserveFile(originalIdentity, 8);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read from offset zero");
@@ -64,7 +68,7 @@ namespace
 	void TestInboxTruncationResetsQueuedCommands()
 	{
 		Command::InboxState state;
-		const auto          identity = MakeIdentity(3, 30, 300);
+		const auto          identity = MakeIdentity({ 3, 30, 300 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 8);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before truncation coverage");
@@ -83,7 +87,7 @@ namespace
 	void TestInboxRemovalResetsState()
 	{
 		Command::InboxState state;
-		const auto          identity = MakeIdentity(4, 40, 400);
+		const auto          identity = MakeIdentity({ 4, 40, 400 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 4);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before removal coverage");
@@ -101,8 +105,10 @@ namespace
 
 	void TestBoundedQueueRefillsFromBufferedFragment()
 	{
-		Command::InboxState state(2, 8 * 1024);
-		const auto          identity = MakeIdentity(5, 50, 500);
+		Command::InboxState state(Command::InboxStateLimits{
+			.maxPendingCommands = 2,
+			.maxPendingFragmentBytes = static_cast<std::size_t>(8) * 1024 });
+		const auto          identity = MakeIdentity({ 5, 50, 500 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 6);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before queue-cap coverage");
@@ -112,9 +118,11 @@ namespace
 		Expect(appendResult.queueAtCapacity, "queue should mark itself at capacity");
 		const auto front = state.FrontCommand();
 		Expect(front.has_value(), "first queued command should be visible at the head");
-		Expect(front->text == "a", "first queued command should remain at the head");
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+		const auto& frontCommand = *front;
+		Expect(frontCommand.text == "a", "first queued command should remain at the head");
 
-		Expect(state.PopFrontCommand(front->sequence), "matching front sequence should pop the queued command");
+		Expect(state.PopFrontCommand(frontCommand.sequence), "matching front sequence should pop the queued command");
 
 		const auto refillResult = state.ObserveFile(identity, 6);
 		Expect(refillResult.extractedCount == 1, "buffered lines should refill the queue once capacity is available");
@@ -123,18 +131,23 @@ namespace
 		Expect(!refillResult.shouldRead, "refill from buffered data should not require another file read");
 		const auto second = state.FrontCommand();
 		Expect(second.has_value(), "second command should be visible after one pop");
-		Expect(second->text == "b", "second command should move to the head after one pop");
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+		const auto& secondCommand = *second;
+		Expect(secondCommand.text == "b", "second command should move to the head after one pop");
 
-		Expect(state.PopFrontCommand(second->sequence), "second front sequence should pop cleanly");
+		Expect(state.PopFrontCommand(secondCommand.sequence), "second front sequence should pop cleanly");
 		const auto third = state.FrontCommand();
 		Expect(third.has_value(), "buffered command should become visible after the refill");
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access)
 		Expect(third->text == "c", "buffered command should become visible after the refill");
 	}
 
 	void TestOversizedFragmentIsDiscarded()
 	{
-		Command::InboxState state(4, 4);
-		const auto          identity = MakeIdentity(6, 60, 600);
+		Command::InboxState state(Command::InboxStateLimits{
+			.maxPendingCommands = 4,
+			.maxPendingFragmentBytes = 4 });
+		const auto          identity = MakeIdentity({ 6, 60, 600 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 5);
 		Expect(observeOriginal.shouldRead, "fresh inbox should read before oversized-fragment coverage");
@@ -147,21 +160,24 @@ namespace
 	void TestStaleFrontSequenceDoesNotPopReplacementCommand()
 	{
 		Command::InboxState state;
-		const auto          originalIdentity = MakeIdentity(7, 70, 700);
-		const auto          replacementIdentity = MakeIdentity(8, 80, 800);
+		const auto          originalIdentity = MakeIdentity({ 7, 70, 700 });
+		const auto          replacementIdentity = MakeIdentity({ 8, 80, 800 });
 
 		Expect(state.ObserveFile(originalIdentity, 4).shouldRead, "fresh inbox should read before stale-sequence coverage");
 		Expect(state.AppendChunk("cmd\n").extractedCount == 1, "original command should queue before replacement");
 		const auto originalFront = state.FrontCommand();
 		Expect(originalFront.has_value(), "original front command should exist");
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+		const auto originalSequence = originalFront->sequence;
 
 		const auto replacement = state.ObserveFile(replacementIdentity, 4);
 		Expect(replacement.resetReason == Command::InboxResetReason::kReplaced, "replacement should reset state before stale-sequence coverage");
 		Expect(state.AppendChunk("cmd\n").extractedCount == 1, "replacement command should queue after reset");
-		Expect(!state.PopFrontCommand(originalFront->sequence), "stale front sequence should not pop the replacement command");
+		Expect(!state.PopFrontCommand(originalSequence), "stale front sequence should not pop the replacement command");
 
 		const auto replacementFront = state.FrontCommand();
 		Expect(replacementFront.has_value(), "replacement front command should remain queued");
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access)
 		Expect(replacementFront->text == "cmd", "replacement command text should remain intact");
 	}
 }

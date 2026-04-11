@@ -1,7 +1,9 @@
 #include "logging/ConsoleActivityTaxonomy.h"
 
+#include <cstring>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
 
 namespace
 {
@@ -49,9 +51,16 @@ namespace
 
 	void TestUnknownActivityKindFailsFast()
 	{
+		using ActivityKind = Logging::ConsoleActivityKind;
+		using ActivityKindValue = std::underlying_type_t<ActivityKind>;
+
+		const ActivityKindValue invalidValue = 999;
+		ActivityKind            invalidKind{};
+		std::memcpy(&invalidKind, &invalidValue, sizeof(invalidKind));
+
 		auto threw = false;
 		try {
-			static_cast<void>(Logging::DescribeConsoleActivityChannel(static_cast<Logging::ConsoleActivityKind>(999)));
+			static_cast<void>(Logging::DescribeConsoleActivityChannel(invalidKind));
 		} catch (const std::invalid_argument&) {
 			threw = true;
 		}

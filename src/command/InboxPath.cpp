@@ -4,16 +4,14 @@
 
 namespace Command
 {
-	ResolvedInboxPath ResolveInboxPath(
-		const std::filesystem::path& configuredPath,
-		const std::filesystem::path& logDirectory)
+	ResolvedInboxPath ResolveInboxPath(const InboxPathContext& context)
 	{
 		ResolvedInboxPath result{};
-		result.configuredPath = configuredPath;
-		result.resolvedPath = configuredPath;
+		result.configuredPath = context.configuredPath;
+		result.resolvedPath = context.configuredPath;
 
 		if (!result.resolvedPath.is_absolute()) {
-			result.resolvedPath = logDirectory / result.resolvedPath;
+			result.resolvedPath = context.logDirectory / result.resolvedPath;
 		}
 
 		std::error_code error;

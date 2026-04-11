@@ -23,7 +23,14 @@ namespace
 		std::uintptr_t               callbackRva;
 	};
 
-	enum class CommandExtractionStatus
+	struct AbsoluteJumpWrite
+	{
+		std::uintptr_t patchSiteAddress;
+		std::uintptr_t jumpTargetAddress;
+		std::size_t    patchSize;
+	};
+
+	enum class CommandExtractionStatus : std::uint8_t
 	{
 		kSuccess,
 		kNoArgs,
@@ -67,6 +74,8 @@ namespace
 	std::atomic_bool         g_loggedNullString = false;
 	std::atomic_bool         g_loggedUtf16ConversionFailure = false;
 
+	void SwallowFailSoftBoundary() noexcept {}
+
 	std::string FormatBytes(std::span<const std::uint8_t> bytes)
 	{
 		std::string formatted;
@@ -82,7 +91,20 @@ namespace
 		return formatted;
 	}
 
-	void WriteAbsoluteJump(std::uintptr_t source, std::uintptr_t destination, std::size_t writeSize)
+	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	{
+		// NOLINTNEXTLINE(performance-no-int-to-ptr)
+		return reinterpret_cast<const void*>(address);
+	}
+
+	template <class T>
+	[[nodiscard]] T AddressAsFunctionPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	{
+		// NOLINTNEXTLINE(performance-no-int-to-ptr)
+		return reinterpret_cast<T>(address);
+	}
+
+	void WriteAbsoluteJump(const AbsoluteJumpWrite& write)
 	{
 		std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> patch{};
 		patch.fill(0x90);
@@ -92,8 +114,8 @@ namespace
 		patch[3] = 0x00;
 		patch[4] = 0x00;
 		patch[5] = 0x00;
-		std::memcpy(patch.data() + 6, &destination, sizeof(destination));
-		REL::safe_write(source, patch.data(), writeSize);
+		std::memcpy(patch.data() + 6, &write.jumpTargetAddress, sizeof(write.jumpTargetAddress));
+		REL::safe_write(write.patchSiteAddress, patch.data(), write.patchSize);
 	}
 
 	void DisablePluginCapture(std::string_view reason) noexcept
@@ -103,7 +125,7 @@ namespace
 			try {
 				logs::warn("Disabling passive console input plugin work after failure: {}", reason);
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 	}
@@ -115,7 +137,7 @@ namespace
 			try {
 				logs::warn("Disabling console command submission after failure: {}", reason);
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 	}
@@ -129,7 +151,7 @@ namespace
 		try {
 			logs::warn("{}", message);
 		} catch (...) {
-			// Intentionally swallow logger failures so detoured paths remain fail-soft.
+			SwallowFailSoftBoundary();
 		}
 	}
 
@@ -142,7 +164,7 @@ namespace
 		const auto target = REL::Module::get().base() + kExecuteCommandHookSite.callbackRva;
 
 		std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> actualBytes{};
-		std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(target), actualBytes.size());
+		std::memcpy(actualBytes.data(), AddressAsPointer(target), actualBytes.size());
 		if (!std::equal(actualBytes.begin(), actualBytes.end(), kExecuteCommandHookSite.expectedPrologue.begin(), kExecuteCommandHookSite.expectedPrologue.end())) {
 			logs::warn(
 				"Skipping ExecuteCommand-path features: {} ExecuteCommand callback prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
@@ -153,7 +175,7 @@ namespace
 			return false;
 		}
 
-		g_directExecuteCommand = reinterpret_cast<ExecuteCommandCallback_t>(target);
+		g_directExecuteCommand = AddressAsFunctionPointer<ExecuteCommandCallback_t>(target);
 		g_executeCommandTargetAddress = target;
 		g_executeCommandPathValidated = true;
 		return true;
@@ -262,7 +284,7 @@ namespace
 						args.GetArgCount() > 0 && args[0].IsStringW());
 				}
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 			return;
 		case CommandExtractionStatus::kUtf16ConversionFailed:
@@ -331,7 +353,7 @@ namespace Capture::Input
 			}
 
 			std::array<std::uint8_t, kExecuteCommandHookSite.hookSize> actualBytes{};
-			std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(g_executeCommandTargetAddress), actualBytes.size());
+			std::memcpy(actualBytes.data(), AddressAsPointer(g_executeCommandTargetAddress), actualBytes.size());
 
 			auto* trampoline = static_cast<std::uint8_t*>(SKSE::GetTrampoline().allocate(kExecuteCommandHookSite.hookSize + kAbsoluteJumpSize));
 			if (trampoline == nullptr) {
@@ -340,13 +362,16 @@ namespace Capture::Input
 			}
 
 			std::memcpy(trampoline, actualBytes.data(), actualBytes.size());
-			WriteAbsoluteJump(
-				reinterpret_cast<std::uintptr_t>(trampoline) + kExecuteCommandHookSite.hookSize,
-				g_executeCommandTargetAddress + kExecuteCommandHookSite.hookSize,
-				kAbsoluteJumpSize);
+			WriteAbsoluteJump(AbsoluteJumpWrite{
+				.patchSiteAddress = reinterpret_cast<std::uintptr_t>(trampoline) + kExecuteCommandHookSite.hookSize,
+				.jumpTargetAddress = g_executeCommandTargetAddress + kExecuteCommandHookSite.hookSize,
+				.patchSize = kAbsoluteJumpSize });
 
 			g_originalExecuteCommand = reinterpret_cast<ExecuteCommandCallback_t>(trampoline);
-			WriteAbsoluteJump(g_executeCommandTargetAddress, reinterpret_cast<std::uintptr_t>(&HookedExecuteCommand), kExecuteCommandHookSite.hookSize);
+			WriteAbsoluteJump(AbsoluteJumpWrite{
+				.patchSiteAddress = g_executeCommandTargetAddress,
+				.jumpTargetAddress = reinterpret_cast<std::uintptr_t>(&HookedExecuteCommand),
+				.patchSize = kExecuteCommandHookSite.hookSize });
 
 			logs::info(
 				"Installed passive console input capture for {} at 0x{:X} with a validated {}-byte ExecuteCommand callback prologue",

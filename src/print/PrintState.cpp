@@ -15,9 +15,9 @@ namespace
 
 namespace Print
 {
-	OutboxState::OutboxState(const std::size_t maxPendingLines, const std::size_t maxPendingFragmentBytes) :
-		_maxPendingLines(maxPendingLines),
-		_maxPendingFragmentBytes(maxPendingFragmentBytes)
+	OutboxState::OutboxState(const OutboxStateLimits limits) :
+		_maxPendingLines(limits.maxPendingLines),
+		_maxPendingFragmentBytes(limits.maxPendingFragmentBytes)
 	{}
 
 	OutboxUpdateResult OutboxState::ObserveMissingFile()

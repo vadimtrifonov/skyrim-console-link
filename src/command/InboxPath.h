@@ -10,7 +10,11 @@ namespace Command
 		std::filesystem::path resolvedPath;
 	};
 
-	[[nodiscard]] ResolvedInboxPath ResolveInboxPath(
-		const std::filesystem::path& configuredPath,
-		const std::filesystem::path& logDirectory);
+	struct InboxPathContext
+	{
+		std::filesystem::path configuredPath;
+		std::filesystem::path logDirectory;
+	};
+
+	[[nodiscard]] ResolvedInboxPath ResolveInboxPath(const InboxPathContext& context);
 }

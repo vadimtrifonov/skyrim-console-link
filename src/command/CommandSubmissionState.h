@@ -50,12 +50,16 @@ namespace Command
 		std::string   text;
 	};
 
+	struct InboxStateLimits
+	{
+		std::size_t maxPendingCommands = 256;
+		std::size_t maxPendingFragmentBytes = 8 * 1024;
+	};
+
 	class InboxState
 	{
 	public:
-		explicit InboxState(
-			std::size_t maxPendingCommands = 256,
-			std::size_t maxPendingFragmentBytes = 8 * 1024);
+		explicit InboxState(InboxStateLimits limits = {});
 
 		[[nodiscard]] InboxUpdateResult ObserveMissingFile();
 		[[nodiscard]] InboxUpdateResult ObserveFile(const InboxFileIdentity& identity, std::uint64_t fileSize);

@@ -25,6 +25,12 @@ add_rules("mode.debug", "mode.releasedbg")
 add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", { outputdir = ".", lsp = "clangd" })
 
+option("msvc_analyze")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable MSVC /analyze for project sources")
+option_end()
+
 local function apply_project_warnings()
     set_warnings("allextra", "error")
     add_cxxflags(
@@ -68,6 +74,15 @@ target("ConsoleLink")
     apply_project_warnings()
 
     add_files("src/**.cpp")
+
+    if has_config("msvc_analyze") then
+        add_cxxflags(
+            "/analyze",
+            "/wd6294",
+            { tools = "cl", files = "src/**.cpp", force = true }
+        )
+    end
+
     add_headerfiles("src/**.h", "src/**.hpp")
     add_includedirs("src")
 

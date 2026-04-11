@@ -10,7 +10,11 @@ namespace Print
 		std::filesystem::path resolvedPath;
 	};
 
-	[[nodiscard]] ResolvedOutboxPath ResolveOutboxPath(
-		const std::filesystem::path& configuredPath,
-		const std::filesystem::path& logDirectory);
+	struct OutboxPathContext
+	{
+		std::filesystem::path configuredPath;
+		std::filesystem::path logDirectory;
+	};
+
+	[[nodiscard]] ResolvedOutboxPath ResolveOutboxPath(const OutboxPathContext& context);
 }

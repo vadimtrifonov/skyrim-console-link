@@ -69,12 +69,18 @@ namespace Bootstrap
 		}
 
 		if (needsOutboxResolution) {
-			const auto resolvedOutboxPath = Print::ResolveOutboxPath(configuredOutboxPath, *logDirectory);
+			const auto resolvedOutboxPath = Print::ResolveOutboxPath(Print::OutboxPathContext{
+				.configuredPath = configuredOutboxPath,
+				.logDirectory = *logDirectory });
 			runtimeOutboxPath = resolvedOutboxPath.resolvedPath;
 		}
 
 		if (needsInboxResolution) {
-			runtimeInboxPath = Command::ResolveInboxPath(configuredInboxPath, *logDirectory).resolvedPath;
+			const auto resolvedInboxPath = Command::ResolveInboxPath(Command::InboxPathContext{
+				.configuredPath = configuredInboxPath,
+				.logDirectory = *logDirectory,
+			});
+			runtimeInboxPath = resolvedInboxPath.resolvedPath;
 		}
 
 		logs::info(
@@ -86,6 +92,11 @@ namespace Bootstrap
 			runtimeInboxPath.string(),
 			loadResult.settings.maxCommandsPerTick);
 
-		Runtime::Initialize(loadResult.settings, runtimeOutboxPath, runtimeInboxPath);
+		Runtime::Initialize(
+			loadResult.settings,
+			Runtime::RuntimePaths{
+				.outboxPath = runtimeOutboxPath,
+				.inboxPath = runtimeInboxPath,
+			});
 	}
 }

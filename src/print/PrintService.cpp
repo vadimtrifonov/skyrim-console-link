@@ -16,8 +16,10 @@ namespace
 	using namespace std::chrono_literals;
 
 	constexpr auto        kPollInterval = 200ms;
-	constexpr std::size_t kMaxReadBytesPerPoll = 64 * 1024;
+	constexpr std::size_t kMaxReadBytesPerPoll = std::size_t{ 64 } * 1024;
 	constexpr auto        kConsolePrintPrefix = "ConsoleLink:";
+
+	void SwallowFailSoftBoundary() noexcept {}
 
 	class ScopedHandle
 	{
@@ -194,13 +196,13 @@ namespace
 				try {
 					logs::warn("Direct console print failed: {}", exception.what());
 				} catch (...) {
-					// Intentionally swallow logger failures so direct print remains fail-soft.
+					SwallowFailSoftBoundary();
 				}
 			} catch (...) {
 				try {
 					logs::warn("Direct console print failed");
 				} catch (...) {
-					// Intentionally swallow logger failures so direct print remains fail-soft.
+					SwallowFailSoftBoundary();
 				}
 			}
 
@@ -230,7 +232,7 @@ namespace
 			}
 
 			try {
-				auto worker = std::jthread([this](std::stop_token stopToken) {
+				auto worker = std::jthread([this](const std::stop_token& stopToken) {
 					try {
 						PollLoop(stopToken);
 					} catch (const std::exception& exception) {
@@ -250,7 +252,7 @@ namespace
 			}
 		}
 
-		void PollLoop(std::stop_token stopToken)
+		void PollLoop(const std::stop_token& stopToken)
 		{
 			while (!stopToken.stop_requested() && !_serviceDisabled.load()) {
 				PollOutbox();
@@ -521,7 +523,7 @@ namespace
 			try {
 				logs::warn("Disabling console print service after {}: {}", context, reason);
 			} catch (...) {
-				// Intentionally swallow logger failures so async boundaries remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 

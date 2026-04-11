@@ -218,7 +218,9 @@ namespace
 	{
 		const std::filesystem::path configured = L"ConsoleLink.outbox.txt";
 		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Print::ResolveOutboxPath(configured, logDirectory);
+		const auto                  result = Print::ResolveOutboxPath(Print::OutboxPathContext{
+							 .configuredPath = configured,
+							 .logDirectory = logDirectory });
 
 		Expect(result.configuredPath == configured, "relative configured outbox path mismatch");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative outbox path should resolve under the log directory");
@@ -228,14 +230,16 @@ namespace
 	{
 		const std::filesystem::path configured = L"ConsoleLink.inbox.txt";
 		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Command::ResolveInboxPath(configured, logDirectory);
+		const auto                  result = Command::ResolveInboxPath(Command::InboxPathContext{
+							 .configuredPath = configured,
+							 .logDirectory = logDirectory });
 
 		Expect(result.configuredPath == configured, "configured inbox path mismatch");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative inbox path should resolve under the log directory");
 	}
 }
 
-int main()
+int main() noexcept  // NOLINT(bugprone-exception-escape)
 {
 	try {
 		TestDefaults();
@@ -256,6 +260,9 @@ int main()
 		return 0;
 	} catch (const std::exception& exception) {
 		std::cerr << "Tests failed: " << exception.what() << '\n';
+		return 1;
+	} catch (...) {
+		std::cerr << "Tests failed: unknown exception\n";
 		return 1;
 	}
 }

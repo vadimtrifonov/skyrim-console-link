@@ -6,8 +6,11 @@
 
 namespace Runtime
 {
-	void Initialize(
-		const Config::Settings&      settings,
-		const std::filesystem::path& outboxPath,
-		const std::filesystem::path& inboxPath);
+	struct RuntimePaths
+	{
+		std::filesystem::path outboxPath;
+		std::filesystem::path inboxPath;
+	};
+
+	void Initialize(const Config::Settings& settings, const RuntimePaths& paths);
 }

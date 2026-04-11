@@ -19,6 +19,8 @@ namespace
 	std::atomic_bool                g_consoleActivityDisabled = false;
 	std::atomic_bool                g_consoleActivityFailureLogged = false;
 
+	void SwallowFailSoftBoundary() noexcept {}
+
 	void DisableConsoleActivityLogging(std::string_view reason) noexcept
 	{
 		g_consoleActivityDisabled = true;
@@ -31,7 +33,7 @@ namespace
 			try {
 				logs::warn("Disabling console activity logging after a plugin-side failure: {}", reason);
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 	}

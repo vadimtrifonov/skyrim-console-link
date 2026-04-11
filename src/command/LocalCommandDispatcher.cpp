@@ -9,12 +9,14 @@
 
 namespace
 {
-	enum class LocalCommandKind
+	enum class LocalCommandKind : std::uint8_t
 	{
 		kNotHandled,
 		kLookup,
 		kUnknown
 	};
+
+	void SwallowFailSoftBoundary() noexcept {}
 
 	std::string_view TrimAscii(std::string_view value) noexcept
 	{
@@ -60,7 +62,7 @@ namespace
 		try {
 			logs::warn("{}", message);
 		} catch (...) {
-			// Intentionally swallow logger failures so local-command boundaries remain fail-soft.
+			SwallowFailSoftBoundary();
 		}
 	}
 
@@ -124,7 +126,7 @@ namespace Command
 			try {
 				logs::warn("Local console command execution failed: {}", exception.what());
 			} catch (...) {
-				// Intentionally swallow logger failures so local-command boundaries remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		} catch (...) {
 			WarnLocalDispatchFailure("Local console command execution failed: unknown exception");

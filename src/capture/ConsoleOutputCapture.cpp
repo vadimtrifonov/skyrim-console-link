@@ -20,6 +20,13 @@ namespace
 		std::size_t                  hookSize;
 	};
 
+	struct AbsoluteJumpWrite
+	{
+		std::uintptr_t patchSiteAddress;
+		std::uintptr_t jumpTargetAddress;
+		std::size_t    patchSize;
+	};
+
 	constexpr ValidatedOutputHookSite kVPrintHookSite{
 		"Skyrim VR",
 		{ 0x48, 0x8B, 0xC4, 0x57, 0x41, 0x54, 0x41, 0x55,
@@ -35,6 +42,8 @@ namespace
 	std::atomic_bool g_loggedTruncation = false;
 	std::atomic_bool g_pluginCaptureDisabled = false;
 	std::atomic_bool g_pluginCaptureFailureLogged = false;
+
+	void SwallowFailSoftBoundary() noexcept {}
 
 	std::string FormatBytes(std::span<const std::uint8_t> bytes)
 	{
@@ -59,7 +68,13 @@ namespace
 		return value;
 	}
 
-	void WriteAbsoluteJump(std::uintptr_t source, std::uintptr_t destination, std::size_t writeSize)
+	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	{
+		// NOLINTNEXTLINE(performance-no-int-to-ptr)
+		return reinterpret_cast<const void*>(address);
+	}
+
+	void WriteAbsoluteJump(const AbsoluteJumpWrite& write)
 	{
 		std::array<std::uint8_t, kVPrintHookSite.hookSize> patch{};
 		patch.fill(0x90);
@@ -69,8 +84,8 @@ namespace
 		patch[3] = 0x00;
 		patch[4] = 0x00;
 		patch[5] = 0x00;
-		std::memcpy(patch.data() + 6, &destination, sizeof(destination));
-		REL::safe_write(source, patch.data(), writeSize);
+		std::memcpy(patch.data() + 6, &write.jumpTargetAddress, sizeof(write.jumpTargetAddress));
+		REL::safe_write(write.patchSiteAddress, patch.data(), write.patchSize);
 	}
 
 	void WarnBestEffort(std::string_view message) noexcept
@@ -78,7 +93,7 @@ namespace
 		try {
 			logs::warn("{}", message);
 		} catch (...) {
-			// Intentionally swallow logger failures so detoured paths remain fail-soft.
+			SwallowFailSoftBoundary();
 		}
 	}
 
@@ -89,7 +104,7 @@ namespace
 			try {
 				logs::warn("Disabling passive console output plugin work after failure: {}", reason);
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 	}
@@ -115,7 +130,7 @@ namespace
 					"Passive console output capture truncated a ConsoleLog::VPrint line to {} bytes; later truncation warnings will be suppressed",
 					kMaxCapturedLineBytes);
 			} catch (...) {
-				// Intentionally swallow logger failures so detoured paths remain fail-soft.
+				SwallowFailSoftBoundary();
 			}
 		}
 
@@ -174,7 +189,7 @@ namespace Capture::Output
 			}
 
 			std::array<std::uint8_t, kVPrintHookSite.hookSize> actualBytes{};
-			std::memcpy(actualBytes.data(), reinterpret_cast<const void*>(target.address()), actualBytes.size());
+			std::memcpy(actualBytes.data(), AddressAsPointer(target.address()), actualBytes.size());
 			if (!std::equal(actualBytes.begin(), actualBytes.end(), kVPrintHookSite.expectedPrologue.begin(), kVPrintHookSite.expectedPrologue.end())) {
 				logs::warn(
 					"Skipping passive console output capture: {} ConsoleLog::VPrint prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
@@ -192,13 +207,16 @@ namespace Capture::Output
 			}
 
 			std::memcpy(trampoline, actualBytes.data(), actualBytes.size());
-			WriteAbsoluteJump(
-				reinterpret_cast<std::uintptr_t>(trampoline) + kVPrintHookSite.hookSize,
-				target.address() + kVPrintHookSite.hookSize,
-				kAbsoluteJumpSize);
+			WriteAbsoluteJump(AbsoluteJumpWrite{
+				.patchSiteAddress = reinterpret_cast<std::uintptr_t>(trampoline) + kVPrintHookSite.hookSize,
+				.jumpTargetAddress = target.address() + kVPrintHookSite.hookSize,
+				.patchSize = kAbsoluteJumpSize });
 
 			g_originalVPrint = reinterpret_cast<VPrint_t>(trampoline);
-			WriteAbsoluteJump(target.address(), reinterpret_cast<std::uintptr_t>(&HookedVPrint), kVPrintHookSite.hookSize);
+			WriteAbsoluteJump(AbsoluteJumpWrite{
+				.patchSiteAddress = target.address(),
+				.jumpTargetAddress = reinterpret_cast<std::uintptr_t>(&HookedVPrint),
+				.patchSize = kVPrintHookSite.hookSize });
 
 			logs::info(
 				"Installed passive console output capture for {} at 0x{:X} with a validated {}-byte ConsoleLog::VPrint prologue",

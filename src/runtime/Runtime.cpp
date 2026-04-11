@@ -45,10 +45,7 @@ namespace
 
 namespace Runtime
 {
-	void Initialize(
-		const Config::Settings&      settings,
-		const std::filesystem::path& outboxPath,
-		const std::filesystem::path& inboxPath)
+	void Initialize(const Config::Settings& settings, const RuntimePaths& paths)
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
@@ -71,7 +68,7 @@ namespace Runtime
 
 		Capture::Output::Install(settings);
 		Capture::Input::Install(settings);
-		Print::Initialize(settings, outboxPath);
-		Command::Initialize(settings, inboxPath);
+		Print::Initialize(settings, paths.outboxPath);
+		Command::Initialize(settings, paths.inboxPath);
 	}
 }
