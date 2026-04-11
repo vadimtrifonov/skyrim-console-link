@@ -6,7 +6,7 @@
         ["cmake#f56260b5"] = {
             repo = {
                 branch = "master",
-                commit = "152f49a311eef65fefdcaa0aa8d70e79ca75e128",
+                commit = "9c9123d6e1e9e226ffed298477eafc21acd51415",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "4.2.3"
@@ -14,7 +14,7 @@
         ["ninja#f56260b5"] = {
             repo = {
                 branch = "master",
-                commit = "152f49a311eef65fefdcaa0aa8d70e79ca75e128",
+                commit = "9c9123d6e1e9e226ffed298477eafc21acd51415",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "v1.13.1"
@@ -22,7 +22,7 @@
         ["rapidcsv#f56260b5"] = {
             repo = {
                 branch = "master",
-                commit = "152f49a311eef65fefdcaa0aa8d70e79ca75e128",
+                commit = "9c9123d6e1e9e226ffed298477eafc21acd51415",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "v8.92"
@@ -30,7 +30,7 @@
         ["spdlog#09c8c173"] = {
             repo = {
                 branch = "master",
-                commit = "152f49a311eef65fefdcaa0aa8d70e79ca75e128",
+                commit = "9c9123d6e1e9e226ffed298477eafc21acd51415",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "v1.17.0"

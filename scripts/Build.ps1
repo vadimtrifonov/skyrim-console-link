@@ -18,25 +18,24 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $enterDevShell = Join-Path $PSScriptRoot "Enter-DevShell.ps1"
 
-function Resolve-CommonLibRoot
-{
-    if ($env:COMMONLIBSSE_NG_ROOT) {
-        return [System.IO.Path]::GetFullPath($env:COMMONLIBSSE_NG_ROOT)
-    }
-
+function Resolve-CommonLibRoot {
     return Join-Path $repoRoot "lib/commonlibsse-ng"
 }
 
-function Assert-CommonLibReady
-{
+function Get-CommonLibSetupCommand {
+    return "git submodule update --init --recursive"
+}
+
+function Assert-CommonLibReady {
     $commonLibRoot = Resolve-CommonLibRoot
+    $setupCommand = Get-CommonLibSetupCommand
     if (-not (Test-Path -LiteralPath $commonLibRoot)) {
-        throw "CommonLibSSE-NG was not found at '$commonLibRoot'. Initialize lib/commonlibsse-ng or set COMMONLIBSSE_NG_ROOT."
+        throw "CommonLibSSE-NG is missing at '$commonLibRoot'. This repo expects that directory to be populated by Git submodules. Run '$setupCommand' from the repo root."
     }
 
     $commonLibXmake = Join-Path $commonLibRoot "xmake.lua"
     if (-not (Test-Path -LiteralPath $commonLibXmake)) {
-        throw "Expected CommonLibSSE-NG xmake project at '$commonLibXmake'."
+        throw "CommonLibSSE-NG at '$commonLibRoot' is incomplete. Expected xmake project at '$commonLibXmake'. Re-run '$setupCommand' from the repo root."
     }
 
     return $commonLibRoot

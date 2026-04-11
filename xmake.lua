@@ -3,14 +3,14 @@ add_defines(
     "WINVER=0x0A00"
 )
 
-local commonlib_root = os.getenv("COMMONLIBSSE_NG_ROOT")
-if commonlib_root == nil or commonlib_root == "" then
-    commonlib_root = "lib/commonlibsse-ng"
-end
-commonlib_root = path.absolute(commonlib_root)
-
+local commonlib_root = path.absolute("lib/commonlibsse-ng")
 if not os.isdir(commonlib_root) then
-    raise("CommonLibSSE-NG root not found at '" .. commonlib_root .. "'. Initialize lib/commonlibsse-ng or set COMMONLIBSSE_NG_ROOT.")
+    raise("CommonLibSSE-NG is missing at '" .. commonlib_root .. "'. This repo expects that directory to be populated by Git submodules. Run 'git submodule update --init --recursive'.")
+end
+
+local commonlib_xmake = path.join(commonlib_root, "xmake.lua")
+if not os.isfile(commonlib_xmake) then
+    raise("CommonLibSSE-NG at '" .. commonlib_root .. "' is incomplete. Expected xmake project at '" .. commonlib_xmake .. "'. Re-run 'git submodule update --init --recursive'.")
 end
 
 includes(commonlib_root)
@@ -89,4 +89,3 @@ target("ConsoleLinkTests")
     )
 
     add_includedirs("src")
-
