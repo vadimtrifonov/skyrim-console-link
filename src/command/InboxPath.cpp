@@ -1,5 +1,7 @@
 #include "command/InboxPath.h"
 
+#include <system_error>
+
 namespace Command
 {
 	ResolvedInboxPath ResolveInboxPath(

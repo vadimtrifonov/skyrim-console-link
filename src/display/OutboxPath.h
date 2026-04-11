@@ -8,7 +8,6 @@ namespace Display
 	{
 		std::filesystem::path configuredPath;
 		std::filesystem::path resolvedPath;
-		bool                  remappedLegacyDefault = false;
 	};
 
 	[[nodiscard]] ResolvedOutboxPath ResolveOutboxPath(

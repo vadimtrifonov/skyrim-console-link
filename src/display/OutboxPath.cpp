@@ -1,12 +1,8 @@
 #include "display/OutboxPath.h"
 
-#include "config/Settings.h"
 #include "pch.h"
 
-namespace
-{
-	constexpr auto kLegacyDefaultOutboxPath = L"Data/SKSE/Plugins/ConsoleLink.outbox.txt";
-}
+#include <system_error>
 
 namespace Display
 {
@@ -17,11 +13,6 @@ namespace Display
 		ResolvedOutboxPath result{};
 		result.configuredPath = configuredPath;
 		result.resolvedPath = configuredPath;
-
-		if (configuredPath.lexically_normal() == std::filesystem::path(kLegacyDefaultOutboxPath).lexically_normal()) {
-			result.resolvedPath = Config::GetDefaultOutboxPath();
-			result.remappedLegacyDefault = true;
-		}
 
 		if (!result.resolvedPath.is_absolute()) {
 			result.resolvedPath = logDirectory / result.resolvedPath;

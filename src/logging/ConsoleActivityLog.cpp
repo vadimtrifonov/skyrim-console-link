@@ -1,9 +1,15 @@
 #include "logging/ConsoleActivityLog.h"
 
-#include "pch.h"
+#include <SKSE/SKSE.h>
 
+#include <atomic>
+#include <exception>
+#include <memory>
+#include <mutex>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
+
+namespace logs = SKSE::log;
 
 namespace
 {

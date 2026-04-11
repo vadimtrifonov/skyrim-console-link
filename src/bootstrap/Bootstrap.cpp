@@ -70,12 +70,6 @@ namespace Bootstrap
 
 		if (needsOutboxResolution) {
 			const auto resolvedOutboxPath = Display::ResolveOutboxPath(configuredOutboxPath, *logDirectory);
-			if (resolvedOutboxPath.remappedLegacyDefault) {
-				logs::warn(
-					"Remapping legacy display outbox path '{}' to the SKSE log directory default '{}'",
-					configuredOutboxPath.string(),
-					resolvedOutboxPath.resolvedPath.string());
-			}
 			runtimeOutboxPath = resolvedOutboxPath.resolvedPath;
 		}
 

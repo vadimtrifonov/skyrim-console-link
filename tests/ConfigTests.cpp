@@ -213,17 +213,6 @@ namespace
 		std::filesystem::remove(path);
 	}
 
-	void TestLegacyOutboxPathRemapsToLogDirectory()
-	{
-		const std::filesystem::path configured = L"Data/SKSE/Plugins/ConsoleLink.outbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Display::ResolveOutboxPath(configured, logDirectory);
-
-		Expect(result.configuredPath == configured, "legacy configured outbox path mismatch");
-		Expect(result.remappedLegacyDefault, "legacy outbox path should be remapped");
-		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / L"ConsoleLink.outbox.txt"), "legacy outbox path should resolve under the log directory");
-	}
-
 	void TestRelativeOutboxPathResolvesUnderLogDirectory()
 	{
 		const std::filesystem::path configured = L"ConsoleLink.outbox.txt";
@@ -231,7 +220,6 @@ namespace
 		const auto                  result = Display::ResolveOutboxPath(configured, logDirectory);
 
 		Expect(result.configuredPath == configured, "relative configured outbox path mismatch");
-		Expect(!result.remappedLegacyDefault, "plain relative outbox path should not be remapped");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative outbox path should resolve under the log directory");
 	}
 
@@ -257,7 +245,6 @@ int main()
 		TestEmptyInboxPathDisablesCommandSubmission();
 		TestOversizedOutboxPathDisablesDisplay();
 		TestOversizedInboxPathDisablesCommandSubmission();
-		TestLegacyOutboxPathRemapsToLogDirectory();
 		TestRelativeOutboxPathResolvesUnderLogDirectory();
 		TestRelativeInboxPathResolvesUnderLogDirectory();
 		RunCommandSubmissionStateTests();
