@@ -243,7 +243,7 @@ namespace
 	}
 }
 
-int main() noexcept  // NOLINT(bugprone-exception-escape)
+int main() noexcept
 {
 	try {
 		TestDefaults();

@@ -68,9 +68,8 @@ namespace
 		return value;
 	}
 
-	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept
 	{
-		// NOLINTNEXTLINE(performance-no-int-to-ptr)
 		return reinterpret_cast<const void*>(address);
 	}
 

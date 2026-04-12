@@ -27,7 +27,6 @@
 *.yml text eol=crlf
 
 .clang-format text eol=crlf
-.clang-tidy text eol=crlf
 .editorconfig text eol=crlf
 .gitattributes text eol=crlf
 .gitignore text eol=crlf

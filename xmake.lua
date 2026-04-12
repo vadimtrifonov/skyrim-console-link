@@ -105,4 +105,16 @@ target("ConsoleLinkTests")
         "tests/**.cpp"
     )
 
+    if has_config("msvc_analyze") then
+        add_cxxflags(
+            "/analyze",
+            "/wd6294",
+            {
+                tools = "cl",
+                files = "tests/**.cpp",
+                force = true
+            }
+        )
+    end
+
     add_includedirs("src")

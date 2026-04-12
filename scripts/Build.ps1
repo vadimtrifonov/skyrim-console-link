@@ -5,8 +5,6 @@ param(
 
     [switch]$Analyze,
 
-    [switch]$IncludeTests,
-
     [switch]$ConfigureOnly,
 
     [switch]$Reconfigure,
@@ -118,7 +116,6 @@ try {
             Write-Host "  sdk:         $sdkVersion"
         }
         Write-Host "  analyze:     $($Analyze.IsPresent)"
-        Write-Host "  tests:       $($IncludeTests.IsPresent)"
         Write-Host "  reconfigure: $($Reconfigure.IsPresent)"
         Write-Host "  commonlib:   $commonLibRoot"
         Write-Host ""

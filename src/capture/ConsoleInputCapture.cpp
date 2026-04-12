@@ -91,16 +91,14 @@ namespace
 		return formatted;
 	}
 
-	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	[[nodiscard]] const void* AddressAsPointer(const std::uintptr_t address) noexcept
 	{
-		// NOLINTNEXTLINE(performance-no-int-to-ptr)
 		return reinterpret_cast<const void*>(address);
 	}
 
 	template <class T>
-	[[nodiscard]] T AddressAsFunctionPointer(const std::uintptr_t address) noexcept  // NOLINT(performance-no-int-to-ptr)
+	[[nodiscard]] T AddressAsFunctionPointer(const std::uintptr_t address) noexcept
 	{
-		// NOLINTNEXTLINE(performance-no-int-to-ptr)
 		return reinterpret_cast<T>(address);
 	}
 

@@ -93,7 +93,7 @@ if (-not $Quiet) {
     Write-Host "  note:         run 'xmake global --clean' after changing Visual Studio or Windows SDK installs"
     Write-Host ""
 
-    Get-Command cl, clang, clang-cl, clang-format, clang-tidy, xmake -ErrorAction SilentlyContinue |
+    Get-Command cl, clang, clang-cl, clang-format, xmake -ErrorAction SilentlyContinue |
         Select-Object Name, Source |
         Format-Table -AutoSize
 }

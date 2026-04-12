@@ -3,6 +3,8 @@ param(
     [ValidateSet("debug", "releasedbg")]
     [string]$Mode = "releasedbg",
 
+    [switch]$Analyze,
+
     [switch]$Quiet
 )
 
@@ -11,24 +13,18 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build.ps1"
-$pluginTarget = "ConsoleLink"
 $testTarget = "ConsoleLinkTests"
 
-& $buildScript -Mode $Mode -IncludeTests -ConfigureOnly -Quiet:$Quiet
+& $buildScript -Mode $Mode -Analyze:$Analyze -ConfigureOnly -Quiet:$Quiet
 
 Push-Location $repoRoot
 try {
     if (-not $Quiet) {
         Write-Host "Building tests" -ForegroundColor Cyan
-        Write-Host "  plugin: $pluginTarget"
         Write-Host "  target: $testTarget"
         Write-Host "  mode:   $Mode"
+        Write-Host "  analyze: $($Analyze.IsPresent)"
         Write-Host ""
-    }
-
-    & xmake build $pluginTarget
-    if ($LASTEXITCODE -ne 0) {
-        throw "xmake build $pluginTarget failed."
     }
 
     & xmake build $testTarget
