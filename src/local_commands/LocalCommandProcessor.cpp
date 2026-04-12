@@ -5,7 +5,6 @@
 #include "local_commands/LookupPrefixCommand.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
-#include "print/PrintService.h"
 
 #include <cctype>
 #include <mutex>
@@ -57,7 +56,6 @@ namespace
 	void EmitLocalResponseLine(std::string_view line) noexcept
 	{
 		Logging::LogLocalActivityLine(line);
-		static_cast<void>(Print::TryPrintImmediateLine(line));
 	}
 
 	LocalCommandKind ParseLocalCommandKind(std::string_view commandName) noexcept

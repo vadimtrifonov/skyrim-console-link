@@ -11,13 +11,10 @@ namespace Config
 	{
 		bool enableConsoleInputLogging = true;
 		bool enableConsoleOutputLogging = true;
-		bool enableConsolePrint = true;
 		bool enableInbox = true;
 
 		bool includeTimestamps = true;
 
-		std::filesystem::path outboxPath = L"ConsoleLink.outbox.txt";
-		std::uint32_t maxPrintLinesPerTick = 8;
 		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
 		std::uint32_t maxInboxLinesPerTick = 4;
 	};
@@ -29,7 +26,6 @@ namespace Config
 	};
 
 	[[nodiscard]] std::filesystem::path GetDefaultSettingsPath();
-	[[nodiscard]] std::filesystem::path GetDefaultOutboxPath();
 	[[nodiscard]] std::filesystem::path GetDefaultInboxPath();
 	[[nodiscard]] Settings GetBuiltInDefaults();
 	[[nodiscard]] LoadResult LoadSettingsWithDiagnostics(const std::filesystem::path& path);

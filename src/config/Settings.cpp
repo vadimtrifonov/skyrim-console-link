@@ -1,8 +1,7 @@
 #include "pch.h"
 
-#include <Windows.h>
-
 #include "config/Settings.h"
+#include <Windows.h>
 
 namespace
 {
@@ -221,11 +220,6 @@ namespace Config
 		return L"Data/SKSE/Plugins/ConsoleLink.ini";
 	}
 
-	std::filesystem::path GetDefaultOutboxPath()
-	{
-		return L"ConsoleLink.outbox.txt";
-	}
-
 	std::filesystem::path GetDefaultInboxPath()
 	{
 		return L"ConsoleLink.inbox.txt";
@@ -234,7 +228,6 @@ namespace Config
 	Settings GetBuiltInDefaults()
 	{
 		Settings settings{};
-		settings.outboxPath = GetDefaultOutboxPath();
 		settings.inboxPath = GetDefaultInboxPath();
 		return settings;
 	}
@@ -294,15 +287,8 @@ namespace Config
 
 		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
 		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
-		applyBool({ { L"Main", L"EnableConsolePrint" } }, &Settings::enableConsolePrint);
 		applyBool({ { L"Main", L"EnableInbox" } }, &Settings::enableInbox);
 		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
-		applyPath(
-			{ { L"Print", L"OutboxPath" } },
-			&Settings::outboxPath,
-			&Settings::enableConsolePrint,
-			"console print");
-		applyUInt32({ { L"Print", L"MaxLinesPerTick" } }, &Settings::maxPrintLinesPerTick);
 		applyPath(
 			{ { L"Inbox", L"Path" } },
 			&Settings::inboxPath,

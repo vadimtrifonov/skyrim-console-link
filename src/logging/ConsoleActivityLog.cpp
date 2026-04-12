@@ -78,7 +78,7 @@ namespace Logging
 			return "Could not resolve the standard SKSE log directory for the console activity log";
 		}
 
-		*logPath /= "ConsoleLink.console.log";
+		*logPath /= GetConsoleActivityLogFilename();
 
 		try {
 			auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logPath->string(), true);
@@ -115,11 +115,6 @@ namespace Logging
 
 	void LogLocalActivityLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine(ConsoleActivityKind::kLocalCommandActivity, line);
-	}
-
-	void LogConsolePrintLine(std::string_view line) noexcept
-	{
-		LogConsoleActivityLine(ConsoleActivityKind::kPrintedConsoleLine, line);
+		LogConsoleActivityLine(ConsoleActivityKind::kLocalActivity, line);
 	}
 }

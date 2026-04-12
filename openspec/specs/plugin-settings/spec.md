@@ -12,25 +12,12 @@ The system MUST load configuration from `Data/SKSE/Plugins/ConsoleLink.ini` and 
 - **THEN** the resolved path points to `Data/SKSE/Plugins/ConsoleLink.ini`
 
 ### Requirement: Settings parsing is forgiving and defaults safely
-The system MUST parse console logging, print, and inbox settings from the INI file, MUST provide built-in default inbox and outbox filenames under the `ConsoleLink` name, and MUST disable print or inbox processing clearly when a configured path is empty or invalid.
-
-#### Scenario: Missing print outbox path uses the built-in default
-- **WHEN** `OutboxPath` is omitted from the canonical print section in the INI file
-- **THEN** print remains enabled
-- **AND** the built-in default outbox filename is `ConsoleLink.outbox.txt`
+The system MUST parse console logging and inbox settings from the INI file, MUST provide the built-in default inbox filename under the `ConsoleLink` name, and MUST disable inbox processing clearly when a configured path is empty or invalid.
 
 #### Scenario: Missing inbox path uses the built-in default
 - **WHEN** `Path` is omitted from the canonical inbox section in the INI file
 - **THEN** inbox processing remains enabled
 - **AND** the built-in default inbox filename is `ConsoleLink.inbox.txt`
-
-### Requirement: Canonical print config names are accepted
-The system MUST accept `EnableConsolePrint` and `[Print]` as the canonical config names for the plugin-authored print path.
-
-#### Scenario: Canonical print config names are used
-- **WHEN** the INI file sets `EnableConsolePrint`
-- **AND** configures print settings under `[Print]`
-- **THEN** the plugin loads those values for the print path
 
 ### Requirement: Canonical inbox config names are accepted
 The system MUST accept `EnableInbox` and `[Inbox]` as the canonical config names for inbox transport settings.
@@ -40,17 +27,17 @@ The system MUST accept `EnableInbox` and `[Inbox]` as the canonical config names
 - **AND** configures inbox settings under `[Inbox]`
 - **THEN** the plugin loads those values for inbox transport
 
-### Requirement: Enabled relative inbox and outbox paths resolve under the SKSE log directory
-The system MUST resolve enabled relative file-backed print and inbox paths under the active SKSE log directory during bootstrap, and MUST fail plugin startup if that directory cannot be resolved when such a path is required.
+### Requirement: Enabled relative inbox paths resolve under the SKSE log directory
+The system MUST resolve enabled relative file-backed inbox paths under the active SKSE log directory during bootstrap, and MUST fail plugin startup if that directory cannot be resolved when such a path is required.
 
-#### Scenario: Relative handoff paths are configured
-- **WHEN** print or inbox processing is enabled
-- **AND** the configured inbox or outbox path is relative
+#### Scenario: Relative inbox path is configured
+- **WHEN** inbox processing is enabled
+- **AND** the configured inbox path is relative
 - **THEN** bootstrap resolves that path under the SKSE log directory
 
-#### Scenario: Required relative handoff path resolution fails
-- **WHEN** print or inbox processing is enabled
-- **AND** the configured inbox or outbox path is relative
+#### Scenario: Required relative inbox path resolution fails
+- **WHEN** inbox processing is enabled
+- **AND** the configured inbox path is relative
 - **AND** the standard SKSE log directory cannot be resolved
 - **THEN** plugin startup fails
 
@@ -59,6 +46,6 @@ The system MUST write a startup log summary of the configuration it will actuall
 
 #### Scenario: Startup reports runtime configuration
 - **WHEN** bootstrap completes configuration loading
-- **THEN** startup logging includes whether input logging, output logging, print, and inbox processing are enabled or disabled
-- **AND** startup logging includes the inbox path and outbox path the plugin will actually use at runtime
-- **AND** startup logging includes the configured per-tick print-line and inbox-line limits
+- **THEN** startup logging includes whether input logging, output logging, and inbox processing are enabled or disabled
+- **AND** startup logging includes the inbox path the plugin will actually use at runtime
+- **AND** startup logging includes the configured per-tick inbox-line limit

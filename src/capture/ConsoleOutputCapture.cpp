@@ -1,6 +1,5 @@
 #include "capture/ConsoleOutputCapture.h"
 
-#include "console/ConsoleActivityPolicy.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 
@@ -139,7 +138,7 @@ namespace
 	void HookedVPrint(RE::ConsoleLog* consoleLog, const char* format, std::va_list args)
 	{
 		std::string line;
-		if (!g_pluginCaptureDisabled.load() && !Console::IsOutputSuppressed()) {
+		if (!g_pluginCaptureDisabled.load()) {
 			std::va_list copy;
 			va_copy(copy, args);
 			try {

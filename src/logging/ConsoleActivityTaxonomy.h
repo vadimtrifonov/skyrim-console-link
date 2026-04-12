@@ -11,8 +11,7 @@ namespace Logging
 		kObservedConsoleOutput,
 		kObservedConsoleInput,
 		kSubmittedConsoleCommand,
-		kLocalCommandActivity,
-		kPrintedConsoleLine
+		kLocalActivity
 	};
 
 	[[nodiscard]] inline std::string_view DescribeConsoleActivityChannel(const ConsoleActivityKind kind)
@@ -24,10 +23,8 @@ namespace Logging
 			return "console-in";
 		case ConsoleActivityKind::kSubmittedConsoleCommand:
 			return "console-submit";
-		case ConsoleActivityKind::kLocalCommandActivity:
+		case ConsoleActivityKind::kLocalActivity:
 			return "local";
-		case ConsoleActivityKind::kPrintedConsoleLine:
-			return "console-print";
 		}
 
 		throw std::invalid_argument("Unknown console activity kind");

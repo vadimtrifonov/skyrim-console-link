@@ -1,3 +1,4 @@
+#include "logging/ConsoleActivityLog.h"
 #include "logging/ConsoleActivityTaxonomy.h"
 
 #include <cstring>
@@ -28,11 +29,11 @@ namespace
 			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kSubmittedConsoleCommand) == "console-submit",
 			"submitted console commands should use console-submit");
 		Expect(
-			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kLocalCommandActivity) == "local",
-			"local command activity should use local");
+			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kLocalActivity) == "local",
+			"local activity should use local");
 		Expect(
-			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kPrintedConsoleLine) == "console-print",
-			"printed console lines should use console-print");
+			Logging::GetConsoleActivityLogFilename() == "ConsoleLink.activity.log",
+			"activity log filename should use the canonical artifact");
 	}
 
 	void TestFormattedRecords()
@@ -40,13 +41,9 @@ namespace
 		using Logging::ConsoleActivityKind;
 
 		Expect(
-			Logging::BuildConsoleActivityRecord(ConsoleActivityKind::kPrintedConsoleLine, "ConsoleLink: status ready") ==
-				"[console-print] ConsoleLink: status ready",
-			"printed console lines should use the canonical record format");
-		Expect(
-			Logging::BuildConsoleActivityRecord(ConsoleActivityKind::kLocalCommandActivity, "unknown local command") ==
+			Logging::BuildConsoleActivityRecord(ConsoleActivityKind::kLocalActivity, "unknown local command") ==
 				"[local] unknown local command",
-			"local command activity should use the canonical record format");
+			"local activity should use the canonical record format");
 	}
 
 	void TestUnknownActivityKindFailsFast()

@@ -3,7 +3,6 @@
 #include "config/Settings.h"
 #include "inbox/InboxPath.h"
 #include "pch.h"
-#include "print/OutboxPath.h"
 #include "runtime/Runtime.h"
 
 namespace
@@ -40,39 +39,25 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} print={} inbox={} timestamps={}",
+			"Config input_logging={} output_logging={} inbox={} timestamps={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
-			loadResult.settings.enableConsolePrint,
 			loadResult.settings.enableInbox,
 			loadResult.settings.includeTimestamps);
 
-		const auto configuredOutboxPath = loadResult.settings.outboxPath;
-		auto runtimeOutboxPath = configuredOutboxPath;
 		const auto configuredInboxPath = loadResult.settings.inboxPath;
 		auto runtimeInboxPath = configuredInboxPath;
-		const auto needsOutboxResolution =
-			loadResult.settings.enableConsolePrint &&
-			!configuredOutboxPath.empty() &&
-			!configuredOutboxPath.is_absolute();
 		const auto needsInboxResolution =
 			loadResult.settings.enableInbox &&
 			!configuredInboxPath.empty() &&
 			!configuredInboxPath.is_absolute();
 
 		std::optional<std::filesystem::path> logDirectory;
-		if (needsOutboxResolution || needsInboxResolution) {
+		if (needsInboxResolution) {
 			logDirectory = logs::log_directory();
 			if (!logDirectory) {
-				SKSE::stl::report_and_fail("Failed to resolve the standard SKSE log directory for enabled file-backed console path resolution.");
+				SKSE::stl::report_and_fail("Failed to resolve the standard SKSE log directory for enabled relative inbox path resolution.");
 			}
-		}
-
-		if (needsOutboxResolution) {
-			const auto resolvedOutboxPath = Print::ResolveOutboxPath(Print::OutboxPathContext{
-				.configuredPath = configuredOutboxPath,
-				.logDirectory = *logDirectory });
-			runtimeOutboxPath = resolvedOutboxPath.resolvedPath;
 		}
 
 		if (needsInboxResolution) {
@@ -84,10 +69,7 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config print_outbox_path='{}' resolved_print_outbox_path='{}' max_print_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",
-			configuredOutboxPath.string(),
-			runtimeOutboxPath.string(),
-			loadResult.settings.maxPrintLinesPerTick,
+			"Config inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",
 			configuredInboxPath.string(),
 			runtimeInboxPath.string(),
 			loadResult.settings.maxInboxLinesPerTick);
@@ -95,7 +77,6 @@ namespace Bootstrap
 		Runtime::Initialize(
 			loadResult.settings,
 			Runtime::RuntimePaths{
-				.outboxPath = runtimeOutboxPath,
 				.inboxPath = runtimeInboxPath,
 			});
 	}

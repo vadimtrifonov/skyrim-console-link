@@ -5,7 +5,6 @@
 #include "inbox/InputProcessor.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
-#include "print/PrintService.h"
 
 namespace
 {
@@ -49,10 +48,9 @@ namespace Runtime
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
-			"Feature state input_logging={} output_logging={} print={} inbox={}",
+			"Feature state input_logging={} output_logging={} inbox={}",
 			settings.enableConsoleInputLogging,
 			settings.enableConsoleOutputLogging,
-			settings.enableConsolePrint,
 			settings.enableInbox);
 
 		if (const auto error = Logging::InitializeConsoleActivityLog(settings)) {
@@ -68,7 +66,6 @@ namespace Runtime
 
 		Capture::Output::Install(settings);
 		Capture::Input::Install(settings);
-		Print::Initialize(settings, paths.outboxPath);
 		Inbox::Initialize(settings, paths.inboxPath);
 	}
 }

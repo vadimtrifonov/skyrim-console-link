@@ -8,7 +8,6 @@ namespace Runtime
 {
 	struct RuntimePaths
 	{
-		std::filesystem::path outboxPath;
 		std::filesystem::path inboxPath;
 	};
 
