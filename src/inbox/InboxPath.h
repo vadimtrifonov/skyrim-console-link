@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace Command
+namespace Inbox
 {
 	struct ResolvedInboxPath
 	{

@@ -6,14 +6,14 @@
 #include <string_view>
 #include <vector>
 
-namespace Command
+namespace LocalCommands
 {
 	struct LookupPrefixMatch
 	{
-		std::string   editorID;
+		std::string editorID;
 		std::uint32_t formID = 0;
-		std::string   formType;
-		std::string   name;
+		std::string formType;
+		std::string name;
 	};
 
 	[[nodiscard]] std::vector<std::string> ExecuteLookupPrefixCommand(std::string_view arguments);

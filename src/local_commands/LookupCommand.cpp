@@ -1,4 +1,4 @@
-#include "command/LookupCommand.h"
+#include "local_commands/LookupCommand.h"
 
 #include "pch.h"
 
@@ -71,12 +71,12 @@ namespace
 	}
 }
 
-namespace Command
+namespace LocalCommands
 {
 	std::vector<std::string> ExecuteLookupCommand(std::string_view arguments)
 	{
-		auto                     remaining = TrimAscii(arguments);
-		const auto               editorID = ConsumeToken(remaining);
+		auto remaining = TrimAscii(arguments);
+		const auto editorID = ConsumeToken(remaining);
 		std::vector<std::string> responseLines;
 
 		if (editorID.empty() || !remaining.empty()) {

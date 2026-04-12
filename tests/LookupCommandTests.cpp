@@ -1,4 +1,4 @@
-#include "command/LookupCommand.h"
+#include "local_commands/LookupCommand.h"
 
 #include <stdexcept>
 #include <string_view>
@@ -14,14 +14,14 @@ namespace
 
 	void TestLookupRequiresEditorID()
 	{
-		const auto result = Command::ExecuteLookupCommand("");
+		const auto result = LocalCommands::ExecuteLookupCommand("");
 		Expect(result.size() == 1, "missing editor ID should return one response line");
 		Expect(result.front() == "usage: cdbg.lookup <EditorID>", "missing editor ID should return usage");
 	}
 
 	void TestLookupRejectsExtraArguments()
 	{
-		const auto result = Command::ExecuteLookupCommand("TH_IronCuirass extra");
+		const auto result = LocalCommands::ExecuteLookupCommand("TH_IronCuirass extra");
 		Expect(result.size() == 1, "extra lookup arguments should return one response line");
 		Expect(result.front() == "usage: cdbg.lookup <EditorID>", "extra lookup arguments should return usage");
 	}

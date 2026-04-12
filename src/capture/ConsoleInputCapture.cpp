@@ -17,17 +17,17 @@ namespace
 
 	struct ValidatedInputHookSite
 	{
-		const char*                  runtimeLabel;
+		const char* runtimeLabel;
 		std::array<std::uint8_t, 17> expectedPrologue;
-		std::size_t                  hookSize;
-		std::uintptr_t               callbackRva;
+		std::size_t hookSize;
+		std::uintptr_t callbackRva;
 	};
 
 	struct AbsoluteJumpWrite
 	{
 		std::uintptr_t patchSiteAddress;
 		std::uintptr_t jumpTargetAddress;
-		std::size_t    patchSize;
+		std::size_t patchSize;
 	};
 
 	enum class CommandExtractionStatus : std::uint8_t
@@ -42,7 +42,7 @@ namespace
 	struct CommandExtractionResult
 	{
 		CommandExtractionStatus status{ CommandExtractionStatus::kNoArgs };
-		std::string             command;
+		std::string command;
 	};
 
 	constexpr ValidatedInputHookSite kExecuteCommandHookSite{
@@ -60,19 +60,19 @@ namespace
 
 	ExecuteCommandCallback_t g_originalExecuteCommand = nullptr;
 	ExecuteCommandCallback_t g_directExecuteCommand = nullptr;
-	std::uintptr_t           g_executeCommandTargetAddress = 0;
-	bool                     g_executeCommandPathValidated = false;
-	std::atomic_bool         g_pluginCaptureDisabled = false;
-	std::atomic_bool         g_pluginCaptureFailureLogged = false;
-	std::atomic_bool         g_submissionDisabled = false;
-	std::atomic_bool         g_submissionFailureLogged = false;
-	std::atomic_bool         g_submissionUnavailableLogged = false;
-	std::atomic_bool         g_loggedMissingConsoleMenu = false;
-	std::atomic_bool         g_loggedMissingConsoleMovie = false;
-	std::atomic_bool         g_loggedNoArgs = false;
-	std::atomic_bool         g_loggedUnexpectedType = false;
-	std::atomic_bool         g_loggedNullString = false;
-	std::atomic_bool         g_loggedUtf16ConversionFailure = false;
+	std::uintptr_t g_executeCommandTargetAddress = 0;
+	bool g_executeCommandPathValidated = false;
+	std::atomic_bool g_pluginCaptureDisabled = false;
+	std::atomic_bool g_pluginCaptureFailureLogged = false;
+	std::atomic_bool g_submissionDisabled = false;
+	std::atomic_bool g_submissionFailureLogged = false;
+	std::atomic_bool g_submissionUnavailableLogged = false;
+	std::atomic_bool g_loggedMissingConsoleMenu = false;
+	std::atomic_bool g_loggedMissingConsoleMovie = false;
+	std::atomic_bool g_loggedNoArgs = false;
+	std::atomic_bool g_loggedUnexpectedType = false;
+	std::atomic_bool g_loggedNullString = false;
+	std::atomic_bool g_loggedUtf16ConversionFailure = false;
 
 	void SwallowFailSoftBoundary() noexcept {}
 
@@ -210,15 +210,15 @@ namespace
 		}
 
 		std::string converted(static_cast<std::size_t>(required), '\0');
-		const auto  written = ::WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            value.data(),
-            static_cast<int>(value.size()),
-            converted.data(),
-            required,
-            nullptr,
-            nullptr);
+		const auto written = ::WideCharToMultiByte(
+			CP_UTF8,
+			0,
+			value.data(),
+			static_cast<int>(value.size()),
+			converted.data(),
+			required,
+			nullptr,
+			nullptr);
 		if (written <= 0) {
 			return std::nullopt;
 		}
@@ -298,7 +298,7 @@ namespace
 	void HookedExecuteCommand(const RE::FxDelegateArgs& args)
 	{
 		CommandExtractionResult extraction;
-		std::string             command;
+		std::string command;
 		if (!g_pluginCaptureDisabled.load()) {
 			try {
 				extraction = ExtractCommandText(args);
@@ -329,8 +329,8 @@ namespace Capture::Input
 		}
 		attempted = true;
 
-		if (!settings.enableConsoleInputLogging && !settings.enableConsoleCommandSubmission) {
-			logs::info("Console input capture and command submission are disabled by config");
+		if (!settings.enableConsoleInputLogging && !settings.enableInbox) {
+			logs::info("Console input capture and inbox are disabled by config");
 			return;
 		}
 
@@ -432,7 +432,7 @@ namespace Capture::Input
 			g_loggedMissingConsoleMovie = false;
 
 			std::array<RE::GFxValue, 1> args{ RE::GFxValue(command) };
-			RE::FxDelegateArgs          delegateArgs(RE::GFxValue{}, console.get(), movie.get(), args.data(), static_cast<std::uint32_t>(args.size()));
+			RE::FxDelegateArgs delegateArgs(RE::GFxValue{}, console.get(), movie.get(), args.data(), static_cast<std::uint32_t>(args.size()));
 
 			callback(delegateArgs);
 			Logging::LogConsoleSubmitLine(command);

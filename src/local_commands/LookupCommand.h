@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-namespace Command
+namespace LocalCommands
 {
 	[[nodiscard]] std::vector<std::string> ExecuteLookupCommand(std::string_view arguments);
 }

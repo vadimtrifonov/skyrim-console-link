@@ -1,11 +1,11 @@
-#include "command/LookupPrefixCommand.h"
+#include "local_commands/LookupPrefixCommand.h"
 
 #include <stdexcept>
 #include <string_view>
 
 namespace
 {
-	using Command::LookupPrefixMatch;
+	using LocalCommands::LookupPrefixMatch;
 
 	void Expect(bool condition, std::string_view message)
 	{
@@ -25,21 +25,21 @@ namespace
 
 	void TestLookupPrefixRequiresPrefix()
 	{
-		const auto result = Command::ExecuteLookupPrefixCommand("", {});
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("", {});
 		Expect(result.size() == 1, "missing prefix should return one response line");
 		Expect(result.front() == "usage: cdbg.lookup-prefix <prefix> [limit]", "missing prefix should return usage");
 	}
 
 	void TestLookupPrefixRejectsZeroLimit()
 	{
-		const auto result = Command::ExecuteLookupPrefixCommand("Armor 0", {});
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("Armor 0", {});
 		Expect(result.size() == 1, "zero limit should return one response line");
 		Expect(result.front() == "usage: cdbg.lookup-prefix <prefix> [limit]", "zero limit should return usage");
 	}
 
 	void TestLookupPrefixRejectsNonNumericLimit()
 	{
-		const auto result = Command::ExecuteLookupPrefixCommand("Armor nope", {});
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("Armor nope", {});
 		Expect(result.size() == 1, "non-numeric limit should return one response line");
 		Expect(result.front() == "usage: cdbg.lookup-prefix <prefix> [limit]", "non-numeric limit should return usage");
 	}
@@ -47,7 +47,7 @@ namespace
 	void TestLookupPrefixUsesDefaultLimitAndOrdersMatches()
 	{
 		const auto matches = MakePrefixMatches();
-		const auto result = Command::ExecuteLookupPrefixCommand("Armor", matches);
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("Armor", matches);
 		Expect(result.size() == 4, "default limit should emit summary plus all matches");
 		Expect(result[0] == "lookup-prefix \"Armor\" -> 3 match(es)", "prefix lookup should emit match count summary");
 		Expect(
@@ -64,7 +64,7 @@ namespace
 	void TestLookupPrefixAppliesExplicitLimitAndReportsTruncation()
 	{
 		const auto matches = MakePrefixMatches();
-		const auto result = Command::ExecuteLookupPrefixCommand("Armor 2", matches);
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("Armor 2", matches);
 		Expect(result.size() == 4, "explicit limit should emit summary, limited matches, and truncation");
 		Expect(result[0] == "lookup-prefix \"Armor\" -> 3 match(es)", "explicit limit should keep full match summary");
 		Expect(
@@ -80,7 +80,7 @@ namespace
 
 	void TestLookupPrefixReportsMiss()
 	{
-		const auto result = Command::ExecuteLookupPrefixCommand("NoSuchPrefix", {});
+		const auto result = LocalCommands::ExecuteLookupPrefixCommand("NoSuchPrefix", {});
 		Expect(result.size() == 1, "miss should return one response line");
 		Expect(result[0] == "lookup-prefix \"NoSuchPrefix\" -> miss", "miss should be explicit");
 	}

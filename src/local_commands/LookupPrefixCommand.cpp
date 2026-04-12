@@ -1,4 +1,4 @@
-#include "command/LookupPrefixCommand.h"
+#include "local_commands/LookupPrefixCommand.h"
 
 #include "pch.h"
 
@@ -96,7 +96,7 @@ namespace
 
 	[[nodiscard]] std::optional<LookupPrefixArguments> ParseLookupPrefixArguments(std::string_view arguments) noexcept
 	{
-		auto       remaining = TrimAscii(arguments);
+		auto remaining = TrimAscii(arguments);
 		const auto prefix = ConsumeToken(remaining);
 		const auto limitToken = ConsumeToken(remaining);
 
@@ -119,7 +119,7 @@ namespace
 		return parsed;
 	}
 
-	std::string FormatLookupMatchLine(const Command::LookupPrefixMatch& match)
+	std::string FormatLookupMatchLine(const LocalCommands::LookupPrefixMatch& match)
 	{
 		std::string response = "lookup-prefix match editor=\"";
 		response += match.editorID;
@@ -137,9 +137,9 @@ namespace
 		return response;
 	}
 
-	[[nodiscard]] std::vector<Command::LookupPrefixMatch> CollectLookupPrefixMatches(std::string_view prefix)
+	[[nodiscard]] std::vector<LocalCommands::LookupPrefixMatch> CollectLookupPrefixMatches(std::string_view prefix)
 	{
-		std::vector<Command::LookupPrefixMatch> matches;
+		std::vector<LocalCommands::LookupPrefixMatch> matches;
 
 		const auto& [map, lock] = RE::TESForm::GetAllFormsByEditorID();
 		[[maybe_unused]] const RE::BSReadWriteLock guard{ lock };
@@ -158,7 +158,7 @@ namespace
 				continue;
 			}
 
-			Command::LookupPrefixMatch match{};
+			LocalCommands::LookupPrefixMatch match{};
 			match.editorID = std::string(editorID);
 			match.formID = form->GetFormID();
 			match.formType = std::string(DescribeFormType(form->GetFormType()));
@@ -175,7 +175,7 @@ namespace
 	}
 }
 
-namespace Command
+namespace LocalCommands
 {
 	std::vector<std::string> ExecuteLookupPrefixCommand(std::string_view arguments)
 	{
@@ -188,7 +188,7 @@ namespace Command
 	}
 
 	std::vector<std::string> ExecuteLookupPrefixCommand(
-		std::string_view                   arguments,
+		std::string_view arguments,
 		std::span<const LookupPrefixMatch> matches)
 	{
 		const auto parsed = ParseLookupPrefixArguments(arguments);
@@ -204,7 +204,7 @@ namespace Command
 				return lhs.editorID < rhs.editorID;
 			});
 
-		const auto               emittedCount = std::min(parsed->limit, orderedMatches.size());
+		const auto emittedCount = std::min(parsed->limit, orderedMatches.size());
 		std::vector<std::string> responseLines;
 		responseLines.reserve(emittedCount + 2);
 

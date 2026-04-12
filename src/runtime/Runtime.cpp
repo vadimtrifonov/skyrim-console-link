@@ -2,7 +2,7 @@
 
 #include "capture/ConsoleInputCapture.h"
 #include "capture/ConsoleOutputCapture.h"
-#include "command/CommandSubmissionService.h"
+#include "inbox/InputProcessor.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 #include "print/PrintService.h"
@@ -49,11 +49,11 @@ namespace Runtime
 	{
 		logs::info("Runtime scaffold initialized for {}", GetRuntimeName());
 		logs::info(
-			"Feature state input_logging={} output_logging={} print={} command_submission={}",
+			"Feature state input_logging={} output_logging={} print={} inbox={}",
 			settings.enableConsoleInputLogging,
 			settings.enableConsoleOutputLogging,
 			settings.enableConsolePrint,
-			settings.enableConsoleCommandSubmission);
+			settings.enableInbox);
 
 		if (const auto error = Logging::InitializeConsoleActivityLog(settings)) {
 			SKSE::stl::report_and_fail(*error);
@@ -69,6 +69,6 @@ namespace Runtime
 		Capture::Output::Install(settings);
 		Capture::Input::Install(settings);
 		Print::Initialize(settings, paths.outboxPath);
-		Command::Initialize(settings, paths.inboxPath);
+		Inbox::Initialize(settings, paths.inboxPath);
 	}
 }

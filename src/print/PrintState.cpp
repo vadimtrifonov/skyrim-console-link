@@ -85,7 +85,7 @@ namespace Print
 
 	std::vector<std::string> OutboxState::DrainLines(const std::size_t maxLines)
 	{
-		const auto               lineCount = std::min(_pendingLines.size(), maxLines);
+		const auto lineCount = std::min(_pendingLines.size(), maxLines);
 		std::vector<std::string> lines;
 		lines.reserve(lineCount);
 		for (std::size_t index = 0; index < lineCount; ++index) {

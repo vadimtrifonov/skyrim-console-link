@@ -95,10 +95,11 @@ target("ConsoleLinkTests")
 
     add_files(
         "src/config/Settings.cpp",
-        "src/command/LookupCommand.cpp",
-        "src/command/LookupPrefixCommand.cpp",
-        "src/command/CommandSubmissionState.cpp",
-        "src/command/InboxPath.cpp",
+        "src/local_commands/LookupCommand.cpp",
+        "src/local_commands/LookupPrefixCommand.cpp",
+        "src/inbox/InboxState.cpp",
+        "src/inbox/InboxPath.cpp",
+        "src/inbox/ZeroInbox.cpp",
         "src/print/PrintState.cpp",
         "src/print/OutboxPath.cpp",
         "tests/**.cpp"

@@ -13,15 +13,15 @@ namespace
 	template <class T>
 	struct ParseResult
 	{
-		T    value;
+		T value;
 		bool malformed = false;
 	};
 
 	struct RawValueResult
 	{
 		std::wstring value;
-		bool         missing = false;
-		bool         truncated = false;
+		bool missing = false;
+		bool truncated = false;
 	};
 
 	struct IniEntry
@@ -32,7 +32,7 @@ namespace
 
 	struct ReadEntryResult
 	{
-		IniEntry       entry{};
+		IniEntry entry{};
 		RawValueResult raw{};
 	};
 
@@ -40,15 +40,15 @@ namespace
 	{
 		const std::wstring sectionName(entry.section);
 		const std::wstring keyName = std::wstring(entry.key);
-		std::size_t        bufferSize = kInitialIniBufferSize;
+		std::size_t bufferSize = kInitialIniBufferSize;
 
 		while (bufferSize <= kMaxIniBufferSize) {
 			std::vector<wchar_t> buffer(bufferSize, L'\0');
-			const auto           length = GetPrivateProfileSectionW(
-                sectionName.c_str(),
-                buffer.data(),
-                static_cast<DWORD>(buffer.size()),
-                path.c_str());
+			const auto length = GetPrivateProfileSectionW(
+				sectionName.c_str(),
+				buffer.data(),
+				static_cast<DWORD>(buffer.size()),
+				path.c_str());
 
 			if (length == 0) {
 				return false;
@@ -57,8 +57,8 @@ namespace
 			if (length < buffer.size() - 2) {
 				for (const auto* cursor = buffer.data(); *cursor != L'\0'; cursor += std::char_traits<wchar_t>::length(cursor) + 1) {
 					const std::wstring_view line(cursor);
-					const auto              separator = line.find(L'=');
-					const auto              candidateKey = separator == std::wstring_view::npos ? line : line.substr(0, separator);
+					const auto separator = line.find(L'=');
+					const auto candidateKey = separator == std::wstring_view::npos ? line : line.substr(0, separator);
 					if (candidateKey == keyName) {
 						return true;
 					}
@@ -81,18 +81,18 @@ namespace
 
 		const std::wstring sectionName(entry.section);
 		const std::wstring keyName(entry.key);
-		std::size_t        bufferSize = kInitialIniBufferSize;
-		std::wstring       value;
+		std::size_t bufferSize = kInitialIniBufferSize;
+		std::wstring value;
 
 		while (bufferSize <= kMaxIniBufferSize) {
 			std::vector<wchar_t> buffer(bufferSize, L'\0');
-			const auto           length = GetPrivateProfileStringW(
-                sectionName.c_str(),
-                keyName.c_str(),
-                L"",
-                buffer.data(),
-                static_cast<DWORD>(buffer.size()),
-                path.c_str());
+			const auto length = GetPrivateProfileStringW(
+				sectionName.c_str(),
+				keyName.c_str(),
+				L"",
+				buffer.data(),
+				static_cast<DWORD>(buffer.size()),
+				path.c_str());
 
 			value.assign(buffer.data(), length);
 			if (length < buffer.size() - 1) {
@@ -106,7 +106,7 @@ namespace
 	}
 
 	ReadEntryResult ReadFirstPresentRawValue(
-		const std::filesystem::path&    path,
+		const std::filesystem::path& path,
 		std::initializer_list<IniEntry> entries)
 	{
 		const auto fallbackEntry = entries.begin() != entries.end() ? *entries.begin() : IniEntry{};
@@ -150,9 +150,9 @@ namespace
 
 	void AddMalformedWarning(
 		std::vector<std::string>& warnings,
-		IniEntry                  entry,
-		const std::wstring&       raw,
-		std::string_view          fallback)
+		IniEntry entry,
+		const std::wstring& raw,
+		std::string_view fallback)
 	{
 		warnings.push_back(
 			"Invalid INI value [" + ToUtf8(entry.section) +
@@ -163,10 +163,10 @@ namespace
 
 	void AddFeatureDisableWarning(
 		std::vector<std::string>& warnings,
-		IniEntry                  entry,
-		const std::wstring&       raw,
-		std::string_view          reason,
-		std::string_view          featureLabel)
+		IniEntry entry,
+		const std::wstring& raw,
+		std::string_view reason,
+		std::string_view featureLabel)
 	{
 		warnings.push_back(
 			"Rejected INI value [" + ToUtf8(entry.section) +
@@ -199,7 +199,7 @@ namespace
 			return { fallback, false };
 		}
 
-		const auto  value = Trim(raw);
+		const auto value = Trim(raw);
 		std::size_t index = 0;
 
 		try {
@@ -295,7 +295,7 @@ namespace Config
 		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
 		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
 		applyBool({ { L"Main", L"EnableConsolePrint" } }, &Settings::enableConsolePrint);
-		applyBool({ { L"Main", L"EnableConsoleCommandSubmission" } }, &Settings::enableConsoleCommandSubmission);
+		applyBool({ { L"Main", L"EnableInbox" } }, &Settings::enableInbox);
 		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
 		applyPath(
 			{ { L"Print", L"OutboxPath" } },
@@ -304,11 +304,11 @@ namespace Config
 			"console print");
 		applyUInt32({ { L"Print", L"MaxLinesPerTick" } }, &Settings::maxPrintLinesPerTick);
 		applyPath(
-			{ { L"CommandSubmission", L"InboxPath" } },
+			{ { L"Inbox", L"Path" } },
 			&Settings::inboxPath,
-			&Settings::enableConsoleCommandSubmission,
-			"console command submission");
-		applyUInt32({ { L"CommandSubmission", L"MaxCommandsPerTick" } }, &Settings::maxCommandsPerTick);
+			&Settings::enableInbox,
+			"inbox");
+		applyUInt32({ { L"Inbox", L"MaxLinesPerTick" } }, &Settings::maxInboxLinesPerTick);
 
 		return result;
 	}

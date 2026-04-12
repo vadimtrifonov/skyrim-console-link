@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-namespace Command
+namespace Inbox
 {
 	void Initialize(const Config::Settings& settings, const std::filesystem::path& inboxPath);
 }

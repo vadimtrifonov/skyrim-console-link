@@ -1,5 +1,5 @@
-#include "command/InboxPath.h"
 #include "config/Settings.h"
+#include "inbox/InboxPath.h"
 #include "print/OutboxPath.h"
 
 #include <Windows.h>
@@ -11,8 +11,11 @@
 #include <string>
 #include <string_view>
 
-void RunCommandSubmissionStateTests();
+void RunInboxStateTests();
+void RunZeroInboxTests();
 void RunConsoleActivityTaxonomyTests();
+void RunConsoleCommandReadinessStateTests();
+void RunLocalCommandReadinessStateTests();
 void RunPrintStateTests();
 void RunLookupCommandTests();
 void RunLookupPrefixCommandTests();
@@ -29,7 +32,7 @@ namespace
 	std::filesystem::path MakeTempIniPath()
 	{
 		static std::uint32_t counter = 0;
-		auto                 path = std::filesystem::temp_directory_path();
+		auto path = std::filesystem::temp_directory_path();
 		path /= "ConsoleLink-tests-" + std::to_string(GetCurrentProcessId()) + "-" + std::to_string(counter++) + ".ini";
 		return path;
 	}
@@ -49,12 +52,12 @@ namespace
 		Expect(result.settings.enableConsoleInputLogging == defaults.enableConsoleInputLogging, "default input logging should be enabled");
 		Expect(result.settings.enableConsoleOutputLogging == defaults.enableConsoleOutputLogging, "default output logging should be enabled");
 		Expect(result.settings.enableConsolePrint == defaults.enableConsolePrint, "default print should be enabled");
-		Expect(result.settings.enableConsoleCommandSubmission == defaults.enableConsoleCommandSubmission, "default command submission mismatch");
+		Expect(result.settings.enableInbox == defaults.enableInbox, "default inbox mismatch");
 		Expect(result.settings.includeTimestamps == defaults.includeTimestamps, "default timestamps should be enabled");
 		Expect(result.settings.outboxPath == defaults.outboxPath, "default outbox path mismatch");
 		Expect(result.settings.maxPrintLinesPerTick == defaults.maxPrintLinesPerTick, "default max print lines per tick mismatch");
 		Expect(result.settings.inboxPath == defaults.inboxPath, "default inbox path mismatch");
-		Expect(result.settings.maxCommandsPerTick == defaults.maxCommandsPerTick, "default max commands per tick mismatch");
+		Expect(result.settings.maxInboxLinesPerTick == defaults.maxInboxLinesPerTick, "default max inbox lines per tick mismatch");
 		Expect(result.warnings.empty(), "missing config should not produce warnings");
 	}
 
@@ -67,7 +70,7 @@ namespace
 			"EnableConsoleInputLogging = false\n"
 			"EnableConsoleOutputLogging = no\n"
 			"EnableConsolePrint = off\n"
-			"EnableConsoleCommandSubmission = true\n"
+			"EnableInbox = true\n"
 			"\n"
 			"[Logging]\n"
 			"IncludeTimestamps = 0\n"
@@ -76,21 +79,21 @@ namespace
 			"OutboxPath = Alt.outbox.txt\n"
 			"MaxLinesPerTick = 3\n"
 			"\n"
-			"[CommandSubmission]\n"
-			"InboxPath = Alt.inbox.txt\n"
-			"MaxCommandsPerTick = 2\n");
+			"[Inbox]\n"
+			"Path = Alt.inbox.txt\n"
+			"MaxLinesPerTick = 2\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
 		Expect(!result.settings.enableConsoleInputLogging, "override input logging mismatch");
 		Expect(!result.settings.enableConsoleOutputLogging, "override output logging mismatch");
 		Expect(!result.settings.enableConsolePrint, "override print mismatch");
-		Expect(result.settings.enableConsoleCommandSubmission, "override command submission mismatch");
+		Expect(result.settings.enableInbox, "override inbox mismatch");
 		Expect(!result.settings.includeTimestamps, "override timestamps mismatch");
 		Expect(result.settings.outboxPath == std::filesystem::path(L"Alt.outbox.txt"), "override outbox path mismatch");
 		Expect(result.settings.maxPrintLinesPerTick == 3, "override max print lines per tick mismatch");
 		Expect(result.settings.inboxPath == std::filesystem::path(L"Alt.inbox.txt"), "override inbox path mismatch");
-		Expect(result.settings.maxCommandsPerTick == 2, "override max commands per tick mismatch");
+		Expect(result.settings.maxInboxLinesPerTick == 2, "override max inbox lines per tick mismatch");
 		Expect(result.warnings.empty(), "valid config should not produce warnings");
 
 		std::filesystem::remove(path);
@@ -107,14 +110,14 @@ namespace
 			"[Print]\n"
 			"MaxLinesPerTick = nope\n"
 			"\n"
-			"[CommandSubmission]\n"
-			"MaxCommandsPerTick = invalid\n");
+			"[Inbox]\n"
+			"MaxLinesPerTick = invalid\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
 		Expect(result.settings.enableConsoleInputLogging, "malformed bool should fall back to default");
 		Expect(result.settings.maxPrintLinesPerTick == 8, "malformed uint should fall back to default");
-		Expect(result.settings.maxCommandsPerTick == 4, "malformed command uint should fall back to default");
+		Expect(result.settings.maxInboxLinesPerTick == 4, "malformed inbox uint should fall back to default");
 		Expect(result.warnings.size() == 3, "expected malformed warnings");
 
 		std::filesystem::remove(path);
@@ -154,20 +157,20 @@ namespace
 		std::filesystem::remove(path);
 	}
 
-	void TestEmptyInboxPathDisablesCommandSubmission()
+	void TestEmptyInboxPathDisablesInbox()
 	{
 		const auto path = MakeTempIniPath();
 		WriteFile(
 			path,
 			"[Main]\n"
-			"EnableConsoleCommandSubmission = true\n"
+			"EnableInbox = true\n"
 			"\n"
-			"[CommandSubmission]\n"
-			"InboxPath =   \n");
+			"[Inbox]\n"
+			"Path =   \n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
-		Expect(!result.settings.enableConsoleCommandSubmission, "empty inbox path should disable command submission");
+		Expect(!result.settings.enableInbox, "empty inbox path should disable inbox");
 		Expect(result.settings.inboxPath.empty(), "empty inbox path should not keep a usable path");
 		Expect(result.warnings.size() == 1, "expected one warning for empty inbox path");
 
@@ -193,22 +196,22 @@ namespace
 		std::filesystem::remove(path);
 	}
 
-	void TestOversizedInboxPathDisablesCommandSubmission()
+	void TestOversizedInboxPathDisablesInbox()
 	{
 		const auto path = MakeTempIniPath();
 		const auto oversizedPath = std::string(600, 'B');
 		WriteFile(
 			path,
 			"[Main]\n"
-			"EnableConsoleCommandSubmission = true\n"
+			"EnableInbox = true\n"
 			"\n"
-			"[CommandSubmission]\n"
-			"InboxPath = " +
+			"[Inbox]\n"
+			"Path = " +
 				oversizedPath + "\n");
 
 		const auto result = Config::LoadSettingsWithDiagnostics(path);
 
-		Expect(!result.settings.enableConsoleCommandSubmission, "oversized inbox path should disable command submission");
+		Expect(!result.settings.enableInbox, "oversized inbox path should disable inbox");
 		Expect(result.settings.inboxPath.empty(), "oversized inbox path should not keep a usable path");
 		Expect(result.warnings.size() == 1, "expected one warning for oversized inbox path");
 
@@ -218,10 +221,10 @@ namespace
 	void TestRelativeOutboxPathResolvesUnderLogDirectory()
 	{
 		const std::filesystem::path configured = L"ConsoleLink.outbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Print::ResolveOutboxPath(Print::OutboxPathContext{
-							 .configuredPath = configured,
-							 .logDirectory = logDirectory });
+		const auto logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
+		const auto result = Print::ResolveOutboxPath(Print::OutboxPathContext{
+			.configuredPath = configured,
+			.logDirectory = logDirectory });
 
 		Expect(result.configuredPath == configured, "relative configured outbox path mismatch");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative outbox path should resolve under the log directory");
@@ -230,10 +233,10 @@ namespace
 	void TestRelativeInboxPathResolvesUnderLogDirectory()
 	{
 		const std::filesystem::path configured = L"ConsoleLink.inbox.txt";
-		const auto                  logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto                  result = Command::ResolveInboxPath(Command::InboxPathContext{
-							 .configuredPath = configured,
-							 .logDirectory = logDirectory });
+		const auto logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
+		const auto result = Inbox::ResolveInboxPath(Inbox::InboxPathContext{
+			.configuredPath = configured,
+			.logDirectory = logDirectory });
 
 		Expect(result.configuredPath == configured, "configured inbox path mismatch");
 		Expect(result.resolvedPath == std::filesystem::absolute(logDirectory / configured), "relative inbox path should resolve under the log directory");
@@ -248,13 +251,16 @@ int main() noexcept  // NOLINT(bugprone-exception-escape)
 		TestMalformedFallbacks();
 		TestMissingOutboxPathUsesDefault();
 		TestEmptyOutboxPathDisablesPrint();
-		TestEmptyInboxPathDisablesCommandSubmission();
+		TestEmptyInboxPathDisablesInbox();
 		TestOversizedOutboxPathDisablesPrint();
-		TestOversizedInboxPathDisablesCommandSubmission();
+		TestOversizedInboxPathDisablesInbox();
 		TestRelativeOutboxPathResolvesUnderLogDirectory();
 		TestRelativeInboxPathResolvesUnderLogDirectory();
-		RunCommandSubmissionStateTests();
+		RunInboxStateTests();
+		RunZeroInboxTests();
 		RunConsoleActivityTaxonomyTests();
+		RunConsoleCommandReadinessStateTests();
+		RunLocalCommandReadinessStateTests();
 		RunPrintStateTests();
 		RunLookupCommandTests();
 		RunLookupPrefixCommandTests();

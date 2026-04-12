@@ -14,6 +14,6 @@ namespace Print
 		kDisabled
 	};
 
-	void                               Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
+	void Initialize(const Config::Settings& settings, const std::filesystem::path& outboxPath);
 	[[nodiscard]] ImmediatePrintResult TryPrintImmediateLine(std::string_view line) noexcept;
 }

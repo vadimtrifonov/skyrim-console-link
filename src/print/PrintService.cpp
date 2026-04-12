@@ -15,9 +15,9 @@ namespace
 {
 	using namespace std::chrono_literals;
 
-	constexpr auto        kPollInterval = 200ms;
+	constexpr auto kPollInterval = 200ms;
 	constexpr std::size_t kMaxReadBytesPerPoll = std::size_t{ 64 } * 1024;
-	constexpr auto        kConsolePrintPrefix = "ConsoleLink:";
+	constexpr auto kConsolePrintPrefix = "ConsoleLink:";
 
 	void SwallowFailSoftBoundary() noexcept {}
 
@@ -81,7 +81,7 @@ namespace
 
 	std::string FormatWindowsError(DWORD errorCode)
 	{
-		wchar_t*   messageBuffer = nullptr;
+		wchar_t* messageBuffer = nullptr;
 		const auto length = ::FormatMessageW(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			nullptr,
@@ -188,7 +188,7 @@ namespace
 					return Print::ImmediatePrintResult::kUnavailable;
 				}
 
-				const auto                         consoleLine = BuildConsoleLine(line);
+				const auto consoleLine = BuildConsoleLine(line);
 				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
 				return Print::ImmediatePrintResult::kPrinted;
@@ -300,7 +300,7 @@ namespace
 			}
 
 			Print::OutboxFileIdentity identity{};
-			DWORD                     identityError = ERROR_SUCCESS;
+			DWORD identityError = ERROR_SUCCESS;
 			if (!TryGetFileIdentity(handle.get(), identity, identityError)) {
 				ReportFileError("identity", identityError);
 				return;
@@ -308,8 +308,8 @@ namespace
 
 			ClearFileErrorState();
 
-			auto                      cursor = std::uint64_t{};
-			const auto                size = static_cast<std::uint64_t>(fileSize.QuadPart);
+			auto cursor = std::uint64_t{};
+			const auto size = static_cast<std::uint64_t>(fileSize.QuadPart);
 			Print::OutboxUpdateResult observeResult{};
 			{
 				std::scoped_lock lock(_queueLock);
@@ -322,7 +322,7 @@ namespace
 				return;
 			}
 
-			const auto    bytesToRead = static_cast<DWORD>(std::min<std::uint64_t>(size - cursor, kMaxReadBytesPerPoll));
+			const auto bytesToRead = static_cast<DWORD>(std::min<std::uint64_t>(size - cursor, kMaxReadBytesPerPoll));
 			LARGE_INTEGER offset{};
 			offset.QuadPart = static_cast<LONGLONG>(cursor);
 			if (!::SetFilePointerEx(handle.get(), offset, nullptr, FILE_BEGIN)) {
@@ -331,7 +331,7 @@ namespace
 			}
 
 			std::string chunk(bytesToRead, '\0');
-			DWORD       bytesRead = 0;
+			DWORD bytesRead = 0;
 			if (!::ReadFile(handle.get(), chunk.data(), bytesToRead, &bytesRead, nullptr)) {
 				ReportFileError("read", ::GetLastError());
 				return;
@@ -470,7 +470,7 @@ namespace
 			std::vector<std::string> lines;
 			{
 				std::scoped_lock lock(_queueLock);
-				const auto       lineBudget = std::max<std::uint32_t>(_settings.maxPrintLinesPerTick, 1);
+				const auto lineBudget = std::max<std::uint32_t>(_settings.maxPrintLinesPerTick, 1);
 				lines = _outboxState.DrainLines(lineBudget);
 			}
 
@@ -479,7 +479,7 @@ namespace
 			}
 
 			for (const auto& line : lines) {
-				const auto                         consoleLine = BuildConsoleLine(line);
+				const auto consoleLine = BuildConsoleLine(line);
 				const Console::SuppressOutputScope suppressConsoleOutput;
 				consoleLog->Print("%s", consoleLine.c_str());
 				Logging::LogConsolePrintLine(consoleLine);
@@ -527,25 +527,25 @@ namespace
 			}
 		}
 
-		Config::Settings      _settings{};
+		Config::Settings _settings{};
 		std::filesystem::path _outboxPath;
-		std::jthread          _worker;
-		std::mutex            _workerStartLock;
-		std::mutex            _queueLock;
-		Print::OutboxState    _outboxState;
-		std::atomic_bool      _initialized = false;
-		bool                  _printEnabled = false;
-		std::atomic_bool      _serviceDisabled = false;
-		std::atomic_bool      _failureLogged = false;
-		std::atomic_bool      _flushScheduled = false;
-		bool                  _workerStarted = false;
-		bool                  _listenerRegistered = false;
-		bool                  _loggedConsoleUnavailable = false;
-		std::atomic_bool      _loggedMissingTaskInterface = false;
-		bool                  _loggedPendingQueueFull = false;
-		bool                  _loggedOversizedFragment = false;
-		DWORD                 _lastFileErrorCode = ERROR_SUCCESS;
-		std::string           _lastFileErrorOperation;
+		std::jthread _worker;
+		std::mutex _workerStartLock;
+		std::mutex _queueLock;
+		Print::OutboxState _outboxState;
+		std::atomic_bool _initialized = false;
+		bool _printEnabled = false;
+		std::atomic_bool _serviceDisabled = false;
+		std::atomic_bool _failureLogged = false;
+		std::atomic_bool _flushScheduled = false;
+		bool _workerStarted = false;
+		bool _listenerRegistered = false;
+		bool _loggedConsoleUnavailable = false;
+		std::atomic_bool _loggedMissingTaskInterface = false;
+		bool _loggedPendingQueueFull = false;
+		bool _loggedOversizedFragment = false;
+		DWORD _lastFileErrorCode = ERROR_SUCCESS;
+		std::string _lastFileErrorOperation;
 	};
 }
 

@@ -1,7 +1,7 @@
 #include "bootstrap/Bootstrap.h"
 
-#include "command/InboxPath.h"
 #include "config/Settings.h"
+#include "inbox/InboxPath.h"
 #include "pch.h"
 #include "print/OutboxPath.h"
 #include "runtime/Runtime.h"
@@ -40,23 +40,23 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} print={} command_submission={} timestamps={}",
+			"Config input_logging={} output_logging={} print={} inbox={} timestamps={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
 			loadResult.settings.enableConsolePrint,
-			loadResult.settings.enableConsoleCommandSubmission,
+			loadResult.settings.enableInbox,
 			loadResult.settings.includeTimestamps);
 
 		const auto configuredOutboxPath = loadResult.settings.outboxPath;
-		auto       runtimeOutboxPath = configuredOutboxPath;
+		auto runtimeOutboxPath = configuredOutboxPath;
 		const auto configuredInboxPath = loadResult.settings.inboxPath;
-		auto       runtimeInboxPath = configuredInboxPath;
+		auto runtimeInboxPath = configuredInboxPath;
 		const auto needsOutboxResolution =
 			loadResult.settings.enableConsolePrint &&
 			!configuredOutboxPath.empty() &&
 			!configuredOutboxPath.is_absolute();
 		const auto needsInboxResolution =
-			loadResult.settings.enableConsoleCommandSubmission &&
+			loadResult.settings.enableInbox &&
 			!configuredInboxPath.empty() &&
 			!configuredInboxPath.is_absolute();
 
@@ -76,7 +76,7 @@ namespace Bootstrap
 		}
 
 		if (needsInboxResolution) {
-			const auto resolvedInboxPath = Command::ResolveInboxPath(Command::InboxPathContext{
+			const auto resolvedInboxPath = Inbox::ResolveInboxPath(Inbox::InboxPathContext{
 				.configuredPath = configuredInboxPath,
 				.logDirectory = *logDirectory,
 			});
@@ -84,13 +84,13 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config print_outbox_path='{}' resolved_print_outbox_path='{}' max_print_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_commands_per_tick={}",
+			"Config print_outbox_path='{}' resolved_print_outbox_path='{}' max_print_lines_per_tick={} inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",
 			configuredOutboxPath.string(),
 			runtimeOutboxPath.string(),
 			loadResult.settings.maxPrintLinesPerTick,
 			configuredInboxPath.string(),
 			runtimeInboxPath.string(),
-			loadResult.settings.maxCommandsPerTick);
+			loadResult.settings.maxInboxLinesPerTick);
 
 		Runtime::Initialize(
 			loadResult.settings,

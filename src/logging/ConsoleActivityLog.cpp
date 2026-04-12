@@ -14,10 +14,10 @@ namespace logs = SKSE::log;
 
 namespace
 {
-	std::mutex                      g_consoleLogLock;
+	std::mutex g_consoleLogLock;
 	std::shared_ptr<spdlog::logger> g_consoleActivityLogger;
-	std::atomic_bool                g_consoleActivityDisabled = false;
-	std::atomic_bool                g_consoleActivityFailureLogged = false;
+	std::atomic_bool g_consoleActivityDisabled = false;
+	std::atomic_bool g_consoleActivityFailureLogged = false;
 
 	void SwallowFailSoftBoundary() noexcept {}
 
@@ -45,7 +45,7 @@ namespace
 		}
 
 		try {
-			const auto                      record = Logging::BuildConsoleActivityRecord(kind, line);
+			const auto record = Logging::BuildConsoleActivityRecord(kind, line);
 			std::shared_ptr<spdlog::logger> logger;
 			{
 				std::scoped_lock lock(g_consoleLogLock);

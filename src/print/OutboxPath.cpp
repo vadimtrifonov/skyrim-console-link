@@ -17,7 +17,7 @@ namespace Print
 		}
 
 		std::error_code error;
-		const auto      absolutePath = std::filesystem::absolute(result.resolvedPath, error);
+		const auto absolutePath = std::filesystem::absolute(result.resolvedPath, error);
 		if (!error) {
 			result.resolvedPath = absolutePath;
 		}

@@ -55,7 +55,7 @@ namespace
 		using ActivityKindValue = std::underlying_type_t<ActivityKind>;
 
 		const ActivityKindValue invalidValue = 999;
-		ActivityKind            invalidKind{};
+		ActivityKind invalidKind{};
 		std::memcpy(&invalidKind, &invalidValue, sizeof(invalidKind));
 
 		auto threw = false;

@@ -1,8 +1,8 @@
-#include "command/InboxPath.h"
+#include "inbox/InboxPath.h"
 
 #include <system_error>
 
-namespace Command
+namespace Inbox
 {
 	ResolvedInboxPath ResolveInboxPath(const InboxPathContext& context)
 	{
@@ -15,7 +15,7 @@ namespace Command
 		}
 
 		std::error_code error;
-		const auto      absolutePath = std::filesystem::absolute(result.resolvedPath, error);
+		const auto absolutePath = std::filesystem::absolute(result.resolvedPath, error);
 		if (!error) {
 			result.resolvedPath = absolutePath;
 		}

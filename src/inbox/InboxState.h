@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace Command
+namespace Inbox
 {
 	struct InboxFileIdentity
 	{
@@ -34,25 +34,25 @@ namespace Command
 	struct InboxUpdateResult
 	{
 		InboxResetReason resetReason{ InboxResetReason::kNone };
-		std::size_t      droppedPendingCommands = 0;
-		std::size_t      extractedCount = 0;
-		std::size_t      pendingCount = 0;
-		std::size_t      pendingFragmentBytes = 0;
-		std::size_t      oversizedFragmentBytes = 0;
-		std::uint64_t    readOffset = 0;
-		bool             queueAtCapacity = false;
-		bool             shouldRead = false;
+		std::size_t droppedPendingLines = 0;
+		std::size_t extractedCount = 0;
+		std::size_t pendingCount = 0;
+		std::size_t pendingFragmentBytes = 0;
+		std::size_t oversizedFragmentBytes = 0;
+		std::uint64_t readOffset = 0;
+		bool queueAtCapacity = false;
+		bool shouldRead = false;
 	};
 
-	struct PendingCommand
+	struct PendingInputLine
 	{
 		std::uint64_t sequence = 0;
-		std::string   text;
+		std::string text;
 	};
 
 	struct InboxStateLimits
 	{
-		std::size_t maxPendingCommands = 256;
+		std::size_t maxPendingLines = 256;
 		std::size_t maxPendingFragmentBytes = 8 * 1024;
 	};
 
@@ -61,29 +61,31 @@ namespace Command
 	public:
 		explicit InboxState(InboxStateLimits limits = {});
 
+		void ResetForNewSession() noexcept;
 		[[nodiscard]] InboxUpdateResult ObserveMissingFile();
 		[[nodiscard]] InboxUpdateResult ObserveFile(const InboxFileIdentity& identity, std::uint64_t fileSize);
 		[[nodiscard]] InboxUpdateResult AppendChunk(std::string_view chunk);
 
-		[[nodiscard]] bool                          HasPendingCommands() const noexcept;
-		[[nodiscard]] std::size_t                   PendingCommandCount() const noexcept;
-		[[nodiscard]] std::optional<PendingCommand> FrontCommand() const;
-		bool                                        PopFrontCommand(std::uint64_t sequence);
+		[[nodiscard]] bool HasPendingLines() const noexcept;
+		[[nodiscard]] std::size_t PendingLineCount() const noexcept;
+		[[nodiscard]] std::optional<PendingInputLine> FrontLine() const;
+		bool PopFrontLine(std::uint64_t sequence);
 
-		[[nodiscard]] std::size_t MaxPendingCommands() const noexcept;
+		[[nodiscard]] std::size_t MaxPendingLines() const noexcept;
 
 	private:
-		[[nodiscard]] InboxUpdateResult ResetState(InboxResetReason reason);
-		void                            ExtractCompleteLines(InboxUpdateResult& result);
+		[[nodiscard]] InboxUpdateResult ResetState(InboxResetReason reason, std::uint64_t baselineOffset);
+		void ExtractCompleteLines(InboxUpdateResult& result);
 
-		std::size_t                _maxPendingCommands = 0;
-		std::size_t                _maxPendingFragmentBytes = 0;
-		std::deque<PendingCommand> _pendingCommands;
-		std::string                _pendingFragment;
-		InboxFileIdentity          _fileIdentity{};
-		std::uint64_t              _fileCursor = 0;
-		std::uint64_t              _nextCommandSequence = 1;
-		bool                       _fileIdentityKnown = false;
+		std::size_t _maxPendingLines = 0;
+		std::size_t _maxPendingFragmentBytes = 0;
+		std::deque<PendingInputLine> _pendingLines;
+		std::string _pendingFragment;
+		InboxFileIdentity _fileIdentity{};
+		std::uint64_t _fileCursor = 0;
+		std::uint64_t _nextSequence = 1;
+		bool _fileIdentityKnown = false;
+		bool _baselineEstablished = false;
 	};
 
 	class WorkerStartState

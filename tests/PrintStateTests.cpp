@@ -32,8 +32,8 @@ namespace
 	void TestOutboxReplacementResetsFromNewHead()
 	{
 		Print::OutboxState state;
-		const auto         originalIdentity = MakeIdentity({ 1, 10, 100 });
-		const auto         replacementIdentity = MakeIdentity({ 2, 20, 200 });
+		const auto originalIdentity = MakeIdentity({ 1, 10, 100 });
+		const auto replacementIdentity = MakeIdentity({ 2, 20, 200 });
 
 		const auto observeOriginal = state.ObserveFile(originalIdentity, 9);
 		Expect(observeOriginal.shouldRead, "fresh outbox should read from offset zero");
@@ -54,7 +54,7 @@ namespace
 	void TestOutboxTruncationResetsQueuedLines()
 	{
 		Print::OutboxState state;
-		const auto         identity = MakeIdentity({ 3, 30, 300 });
+		const auto identity = MakeIdentity({ 3, 30, 300 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 10);
 		Expect(observeOriginal.shouldRead, "fresh outbox should read before truncation coverage");
@@ -73,7 +73,7 @@ namespace
 	void TestOutboxRemovalResetsState()
 	{
 		Print::OutboxState state;
-		const auto         identity = MakeIdentity({ 4, 40, 400 });
+		const auto identity = MakeIdentity({ 4, 40, 400 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 5);
 		Expect(observeOriginal.shouldRead, "fresh outbox should read before removal coverage");
@@ -94,7 +94,7 @@ namespace
 		Print::OutboxState state(Print::OutboxStateLimits{
 			.maxPendingLines = 2,
 			.maxPendingFragmentBytes = static_cast<std::size_t>(8) * 1024 });
-		const auto         identity = MakeIdentity({ 5, 50, 500 });
+		const auto identity = MakeIdentity({ 5, 50, 500 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 6);
 		Expect(observeOriginal.shouldRead, "fresh outbox should read before queue-cap coverage");
@@ -124,7 +124,7 @@ namespace
 		Print::OutboxState state(Print::OutboxStateLimits{
 			.maxPendingLines = 4,
 			.maxPendingFragmentBytes = 4 });
-		const auto         identity = MakeIdentity({ 6, 60, 600 });
+		const auto identity = MakeIdentity({ 6, 60, 600 });
 
 		const auto observeOriginal = state.ObserveFile(identity, 5);
 		Expect(observeOriginal.shouldRead, "fresh outbox should read before oversized-fragment coverage");
