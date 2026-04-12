@@ -134,6 +134,10 @@ namespace
 			response += "\"";
 		}
 
+		response += " source=\"";
+		response += match.source;
+		response += "\"";
+
 		return response;
 	}
 
@@ -166,6 +170,9 @@ namespace
 			const auto* name = form->GetName();
 			if (name != nullptr && name[0] != '\0') {
 				match.name = name;
+			}
+			if (const auto* file = form->GetFile(); file != nullptr) {
+				match.source = std::string(file->GetFilename());
 			}
 
 			matches.push_back(std::move(match));

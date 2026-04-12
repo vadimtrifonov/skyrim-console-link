@@ -35,9 +35,9 @@ The system MUST reject malformed `cdbg.lookup-prefix` usage with a readable loca
 - **WHEN** the user submits `cdbg.lookup-prefix <prefix> nope`
 - **THEN** the plugin emits `usage: cdbg.lookup-prefix <prefix> [limit]`
 
-### Requirement: Prefix lookup output is bounded, ordered, and explicit about truncation
+### Requirement: Prefix lookup output is bounded, ordered, and includes source
 
-The system MUST order prefix lookup matches by Editor ID, MUST emit at most the effective result limit, and MUST state when additional matches were truncated.
+The system MUST order prefix lookup matches by Editor ID, MUST emit at most the effective result limit, MUST include the source plugin on each emitted match line, and MUST state when additional matches were truncated.
 
 #### Scenario: Prefix lookup uses the built-in default limit
 
@@ -54,6 +54,12 @@ The system MUST order prefix lookup matches by Editor ID, MUST emit at most the 
 - **WHEN** the plugin emits multiple prefix lookup matches
 - **THEN** those match lines are ordered by Editor ID
 - **AND** the plugin emits no more than the effective result limit
+
+#### Scenario: Prefix lookup match output includes the source plugin
+
+- **WHEN** the prefix lookup emits a match line
+- **THEN** that line includes `source="<plugin>"`
+- **AND** that value is the source plugin filename for the matched form
 
 #### Scenario: Prefix lookup reports truncation
 

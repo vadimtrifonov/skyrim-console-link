@@ -14,6 +14,7 @@ namespace LocalCommands
 		std::uint32_t formID = 0;
 		std::string formType;
 		std::string name;
+		std::string source;
 	};
 
 	[[nodiscard]] std::vector<std::string> ExecuteLookupPrefixCommand(std::string_view arguments);

@@ -17,7 +17,7 @@ rules:
     - MUST NOT invent Impact, unless it is non-obvious.
   design:
     - MUST be token-efficient.
-    - MUST specify high signal, critical decisions only.
+    - MUST specify critical structural decisions only.
     - MUST NOT invent Non-goals, Risks / Trade-offs, Migration Plan, Open Questions, unless they are non-obvious.
   tasks:
     - MUST be change completion ledger.
