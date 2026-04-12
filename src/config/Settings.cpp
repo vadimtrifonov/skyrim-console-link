@@ -288,7 +288,6 @@ namespace Config
 		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
 		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
 		applyBool({ { L"Main", L"EnableInbox" } }, &Settings::enableInbox);
-		applyBool({ { L"Logging", L"IncludeTimestamps" } }, &Settings::includeTimestamps);
 		applyPath(
 			{ { L"Inbox", L"Path" } },
 			&Settings::inboxPath,

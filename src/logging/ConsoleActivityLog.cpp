@@ -65,7 +65,7 @@ namespace
 
 namespace Logging
 {
-	std::optional<std::string> InitializeConsoleActivityLog(const Config::Settings& settings)
+	std::optional<std::string> InitializeConsoleActivityLog()
 	{
 		std::scoped_lock lock(g_consoleLogLock);
 		g_consoleActivityLogger.reset();
@@ -85,7 +85,7 @@ namespace Logging
 			auto logger = std::make_shared<spdlog::logger>("console activity log", std::move(sink));
 			logger->set_level(spdlog::level::info);
 			logger->flush_on(spdlog::level::info);
-			logger->set_pattern(settings.includeTimestamps ? "[%Y-%m-%d %H:%M:%S.%e] %v" : "%v");
+			logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 			g_consoleActivityLogger = std::move(logger);
 			logs::info("Console activity log: {}", logPath->string());
 			return std::nullopt;

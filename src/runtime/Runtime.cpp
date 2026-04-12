@@ -53,7 +53,7 @@ namespace Runtime
 			settings.enableConsoleOutputLogging,
 			settings.enableInbox);
 
-		if (const auto error = Logging::InitializeConsoleActivityLog(settings)) {
+		if (const auto error = Logging::InitializeConsoleActivityLog()) {
 			SKSE::stl::report_and_fail(*error);
 		}
 		InitializeCaptureTrampoline(settings);

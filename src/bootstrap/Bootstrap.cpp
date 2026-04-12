@@ -39,11 +39,10 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} inbox={} timestamps={}",
+			"Config input_logging={} output_logging={} inbox={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
-			loadResult.settings.enableInbox,
-			loadResult.settings.includeTimestamps);
+			loadResult.settings.enableInbox);
 
 		const auto configuredInboxPath = loadResult.settings.inboxPath;
 		auto runtimeInboxPath = configuredInboxPath;

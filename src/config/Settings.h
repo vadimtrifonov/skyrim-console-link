@@ -13,8 +13,6 @@ namespace Config
 		bool enableConsoleOutputLogging = true;
 		bool enableInbox = true;
 
-		bool includeTimestamps = true;
-
 		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
 		std::uint32_t maxInboxLinesPerTick = 4;
 	};

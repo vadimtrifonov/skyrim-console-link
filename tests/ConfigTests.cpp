@@ -50,7 +50,6 @@ namespace
 		Expect(result.settings.enableConsoleInputLogging == defaults.enableConsoleInputLogging, "default input logging should be enabled");
 		Expect(result.settings.enableConsoleOutputLogging == defaults.enableConsoleOutputLogging, "default output logging should be enabled");
 		Expect(result.settings.enableInbox == defaults.enableInbox, "default inbox mismatch");
-		Expect(result.settings.includeTimestamps == defaults.includeTimestamps, "default timestamps should be enabled");
 		Expect(result.settings.inboxPath == defaults.inboxPath, "default inbox path mismatch");
 		Expect(result.settings.maxInboxLinesPerTick == defaults.maxInboxLinesPerTick, "default max inbox lines per tick mismatch");
 		Expect(result.warnings.empty(), "missing config should not produce warnings");
@@ -66,9 +65,6 @@ namespace
 			"EnableConsoleOutputLogging = no\n"
 			"EnableInbox = true\n"
 			"\n"
-			"[Logging]\n"
-			"IncludeTimestamps = 0\n"
-			"\n"
 			"[Inbox]\n"
 			"Path = Alt.inbox.txt\n"
 			"MaxLinesPerTick = 2\n");
@@ -78,7 +74,6 @@ namespace
 		Expect(!result.settings.enableConsoleInputLogging, "override input logging mismatch");
 		Expect(!result.settings.enableConsoleOutputLogging, "override output logging mismatch");
 		Expect(result.settings.enableInbox, "override inbox mismatch");
-		Expect(!result.settings.includeTimestamps, "override timestamps mismatch");
 		Expect(result.settings.inboxPath == std::filesystem::path(L"Alt.inbox.txt"), "override inbox path mismatch");
 		Expect(result.settings.maxInboxLinesPerTick == 2, "override max inbox lines per tick mismatch");
 		Expect(result.warnings.empty(), "valid config should not produce warnings");
