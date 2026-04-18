@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-namespace Config
+namespace Settings
 {
-	struct Settings
+	struct Values
 	{
 		bool enableConsoleInputLogging = true;
 		bool enableConsoleOutputLogging = true;
@@ -19,14 +19,14 @@ namespace Config
 
 	struct LoadResult
 	{
-		Settings settings;
+		Values settings;
 		std::vector<std::string> warnings;
 	};
 
 	[[nodiscard]] std::filesystem::path GetDefaultSettingsPath();
 	[[nodiscard]] std::filesystem::path GetDefaultInboxPath();
-	[[nodiscard]] Settings GetBuiltInDefaults();
+	[[nodiscard]] Values GetBuiltInDefaults();
 	[[nodiscard]] LoadResult LoadSettingsWithDiagnostics(const std::filesystem::path& path);
-	[[nodiscard]] Settings LoadSettings(const std::filesystem::path& path);
-	[[nodiscard]] Settings LoadDefaultSettings();
+	[[nodiscard]] Values LoadSettings(const std::filesystem::path& path);
+	[[nodiscard]] Values LoadDefaultSettings();
 }

@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "config/Settings.h"
+#include "settings/Settings.h"
 #include <Windows.h>
 
 namespace
@@ -213,7 +213,7 @@ namespace
 
 }
 
-namespace Config
+namespace Settings
 {
 	std::filesystem::path GetDefaultSettingsPath()
 	{
@@ -225,9 +225,9 @@ namespace Config
 		return L"ConsoleLink.inbox.txt";
 	}
 
-	Settings GetBuiltInDefaults()
+	Values GetBuiltInDefaults()
 	{
-		Settings settings{};
+		Values settings{};
 		settings.inboxPath = GetDefaultInboxPath();
 		return settings;
 	}
@@ -237,7 +237,7 @@ namespace Config
 		LoadResult result{};
 		result.settings = GetBuiltInDefaults();
 
-		auto applyBool = [&](std::initializer_list<IniEntry> entries, bool Settings::* member) {
+		auto applyBool = [&](std::initializer_list<IniEntry> entries, bool Values::* member) {
 			const auto rawResult = ReadFirstPresentRawValue(path, entries);
 			const auto parsed = ParseBool(rawResult.raw.value, result.settings.*member);
 			if (parsed.malformed) {
@@ -246,7 +246,7 @@ namespace Config
 			result.settings.*member = parsed.value;
 		};
 
-		auto applyUInt32 = [&](std::initializer_list<IniEntry> entries, std::uint32_t Settings::* member) {
+		auto applyUInt32 = [&](std::initializer_list<IniEntry> entries, std::uint32_t Values::* member) {
 			const auto rawResult = ReadFirstPresentRawValue(path, entries);
 			const auto parsed = ParseUInt32(rawResult.raw.value, result.settings.*member);
 			if (parsed.malformed) {
@@ -255,7 +255,7 @@ namespace Config
 			result.settings.*member = parsed.value;
 		};
 
-		auto applyPath = [&](std::initializer_list<IniEntry> entries, std::filesystem::path Settings::* pathMember, bool Settings::* enabledMember, std::string_view featureLabel) {
+		auto applyPath = [&](std::initializer_list<IniEntry> entries, std::filesystem::path Values::* pathMember, bool Values::* enabledMember, std::string_view featureLabel) {
 			const auto rawResult = ReadFirstPresentRawValue(path, entries);
 			if (rawResult.raw.missing) {
 				return;
@@ -285,25 +285,25 @@ namespace Config
 			result.settings.*pathMember = std::filesystem::path(value);
 		};
 
-		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Settings::enableConsoleInputLogging);
-		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Settings::enableConsoleOutputLogging);
-		applyBool({ { L"Main", L"EnableInbox" } }, &Settings::enableInbox);
+		applyBool({ { L"Main", L"EnableConsoleInputLogging" } }, &Values::enableConsoleInputLogging);
+		applyBool({ { L"Main", L"EnableConsoleOutputLogging" } }, &Values::enableConsoleOutputLogging);
+		applyBool({ { L"Main", L"EnableInbox" } }, &Values::enableInbox);
 		applyPath(
 			{ { L"Inbox", L"Path" } },
-			&Settings::inboxPath,
-			&Settings::enableInbox,
+			&Values::inboxPath,
+			&Values::enableInbox,
 			"inbox");
-		applyUInt32({ { L"Inbox", L"MaxLinesPerTick" } }, &Settings::maxInboxLinesPerTick);
+		applyUInt32({ { L"Inbox", L"MaxLinesPerTick" } }, &Values::maxInboxLinesPerTick);
 
 		return result;
 	}
 
-	Settings LoadSettings(const std::filesystem::path& path)
+	Values LoadSettings(const std::filesystem::path& path)
 	{
 		return LoadSettingsWithDiagnostics(path).settings;
 	}
 
-	Settings LoadDefaultSettings()
+	Values LoadDefaultSettings()
 	{
 		return LoadSettings(GetDefaultSettingsPath());
 	}

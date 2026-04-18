@@ -1,10 +1,10 @@
 #pragma once
 
-#include "config/Settings.h"
+#include "settings/Settings.h"
 
 #include <filesystem>
 
 namespace Inbox
 {
-	void Initialize(const Config::Settings& settings, const std::filesystem::path& inboxPath);
+	void Initialize(const Settings::Values& settings, const std::filesystem::path& inboxPath);
 }

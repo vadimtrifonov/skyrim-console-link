@@ -1,9 +1,9 @@
 #include "bootstrap/Bootstrap.h"
 
-#include "config/Settings.h"
 #include "inbox/InboxPath.h"
 #include "pch.h"
 #include "runtime/Runtime.h"
+#include "settings/Settings.h"
 
 namespace
 {
@@ -25,21 +25,21 @@ namespace Bootstrap
 	{
 		logs::info("Initializing ConsoleLink on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
 
-		const auto settingsPath = Config::GetDefaultSettingsPath();
+		const auto settingsPath = Settings::GetDefaultSettingsPath();
 		const auto settingsExists = std::filesystem::exists(settingsPath);
 		if (settingsExists) {
-			logs::info("Loading config from {}", settingsPath.string());
+			logs::info("Loading settings from {}", settingsPath.string());
 		} else {
-			logs::warn("Config file not found at {}; using built-in defaults", settingsPath.string());
+			logs::warn("Settings file not found at {}; using built-in defaults", settingsPath.string());
 		}
 
-		auto loadResult = Config::LoadSettingsWithDiagnostics(settingsPath);
+		auto loadResult = Settings::LoadSettingsWithDiagnostics(settingsPath);
 		for (const auto& warning : loadResult.warnings) {
 			logs::warn("{}", warning);
 		}
 
 		logs::info(
-			"Config input_logging={} output_logging={} inbox={}",
+			"Settings input_logging={} output_logging={} inbox={}",
 			loadResult.settings.enableConsoleInputLogging,
 			loadResult.settings.enableConsoleOutputLogging,
 			loadResult.settings.enableInbox);
@@ -68,7 +68,7 @@ namespace Bootstrap
 		}
 
 		logs::info(
-			"Config inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",
+			"Settings inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",
 			configuredInboxPath.string(),
 			runtimeInboxPath.string(),
 			loadResult.settings.maxInboxLinesPerTick);

@@ -94,7 +94,7 @@ target("ConsoleLinkTests")
     apply_project_warnings()
 
     add_files(
-        "src/config/Settings.cpp",
+        "src/settings/Settings.cpp",
         "src/local_commands/LookupCommand.cpp",
         "src/local_commands/LookupPrefixCommand.cpp",
         "src/inbox/InboxState.cpp",

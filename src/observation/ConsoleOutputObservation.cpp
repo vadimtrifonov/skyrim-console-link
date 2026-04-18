@@ -1,4 +1,4 @@
-#include "capture/ConsoleOutputCapture.h"
+#include "observation/ConsoleOutputObservation.h"
 
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
@@ -34,13 +34,13 @@ namespace
 	};
 
 	constexpr std::size_t kAbsoluteJumpSize = 14;
-	constexpr std::size_t kMaxCapturedLineBytes = 4096;
+	constexpr std::size_t kMaxObservedLineBytes = 4096;
 
 	VPrint_t g_originalVPrint = nullptr;
 	std::atomic_bool g_loggedFormatFailure = false;
 	std::atomic_bool g_loggedTruncation = false;
-	std::atomic_bool g_pluginCaptureDisabled = false;
-	std::atomic_bool g_pluginCaptureFailureLogged = false;
+	std::atomic_bool g_pluginObservationDisabled = false;
+	std::atomic_bool g_pluginObservationFailureLogged = false;
 
 	void SwallowFailSoftBoundary() noexcept {}
 
@@ -95,73 +95,73 @@ namespace
 		}
 	}
 
-	void DisablePluginCapture(std::string_view reason) noexcept
+	void DisablePluginObservation(std::string_view reason) noexcept
 	{
-		g_pluginCaptureDisabled = true;
-		if (!g_pluginCaptureFailureLogged.exchange(true)) {
+		g_pluginObservationDisabled = true;
+		if (!g_pluginObservationFailureLogged.exchange(true)) {
 			try {
-				logs::warn("Disabling passive console output plugin work after failure: {}", reason);
+				logs::warn("Disabling passive console output observation after failure: {}", reason);
 			} catch (...) {
 				SwallowFailSoftBoundary();
 			}
 		}
 	}
 
-	std::string CaptureFormattedLine(const char* format, std::va_list args)
+	std::string ObserveFormattedLine(const char* format, std::va_list args)
 	{
 		if (format == nullptr) {
 			return {};
 		}
 
-		std::array<char, kMaxCapturedLineBytes + 1> buffer{};
+		std::array<char, kMaxObservedLineBytes + 1> buffer{};
 		const auto written = std::vsnprintf(buffer.data(), buffer.size(), format, args);
 		if (written < 0) {
 			if (!g_loggedFormatFailure.exchange(true)) {
-				WarnBestEffort("Passive console output capture failed to format a ConsoleLog::VPrint line; later failures will be suppressed");
+				WarnBestEffort("Passive console output observation failed to format a ConsoleLog::VPrint line; later failures will be suppressed");
 			}
 			return {};
 		}
 
-		if (written > static_cast<int>(kMaxCapturedLineBytes) && !g_loggedTruncation.exchange(true)) {
+		if (written > static_cast<int>(kMaxObservedLineBytes) && !g_loggedTruncation.exchange(true)) {
 			try {
 				logs::warn(
-					"Passive console output capture truncated a ConsoleLog::VPrint line to {} bytes; later truncation warnings will be suppressed",
-					kMaxCapturedLineBytes);
+					"Passive console output observation truncated a ConsoleLog::VPrint line to {} bytes; later truncation warnings will be suppressed",
+					kMaxObservedLineBytes);
 			} catch (...) {
 				SwallowFailSoftBoundary();
 			}
 		}
 
-		return TrimConsoleLine(std::string(buffer.data(), static_cast<std::size_t>(std::min<int>(written, kMaxCapturedLineBytes))));
+		return TrimConsoleLine(std::string(buffer.data(), static_cast<std::size_t>(std::min<int>(written, kMaxObservedLineBytes))));
 	}
 
 	void HookedVPrint(RE::ConsoleLog* consoleLog, const char* format, std::va_list args)
 	{
 		std::string line;
-		if (!g_pluginCaptureDisabled.load()) {
+		if (!g_pluginObservationDisabled.load()) {
 			std::va_list copy;
 			va_copy(copy, args);
 			try {
-				line = CaptureFormattedLine(format, copy);
+				line = ObserveFormattedLine(format, copy);
 			} catch (const std::exception& exception) {
-				DisablePluginCapture(exception.what());
+				DisablePluginObservation(exception.what());
 			} catch (...) {
-				DisablePluginCapture("unknown exception");
+				DisablePluginObservation("unknown exception");
 			}
 			va_end(copy);
 		}
 
 		g_originalVPrint(consoleLog, format, args);
 
-		if (!line.empty() && !g_pluginCaptureDisabled.load()) {
+		if (!line.empty() && !g_pluginObservationDisabled.load()) {
 			Logging::LogConsoleOutputLine(line);
 		}
 	}
 }
 
-namespace Capture::Output
+namespace Observation::Output
 {
-	void Install(const Config::Settings& settings)
+	void Install(const Settings::Values& settings)
 	{
 		static bool attempted = false;
 		if (attempted) {
@@ -170,19 +170,19 @@ namespace Capture::Output
 		attempted = true;
 
 		if (!settings.enableConsoleOutputLogging) {
-			logs::info("Console output capture is disabled by config");
+			logs::info("Console output observation is disabled by settings");
 			return;
 		}
 
 		if (!REL::Module::IsVR()) {
-			logs::warn("Skipping passive console output capture: the first observational hook is VR-only");
+			logs::warn("Skipping passive console output observation: the first observation hook is VR-only");
 			return;
 		}
 
 		try {
 			REL::Relocation<std::uintptr_t> target{ RE::Offset::ConsoleLog::VPrint };
 			if (target.address() == 0) {
-				logs::warn("Skipping passive console output capture: failed to resolve ConsoleLog::VPrint");
+				logs::warn("Skipping passive console output observation: failed to resolve ConsoleLog::VPrint");
 				return;
 			}
 
@@ -190,7 +190,7 @@ namespace Capture::Output
 			std::memcpy(actualBytes.data(), AddressAsPointer(target.address()), actualBytes.size());
 			if (!std::equal(actualBytes.begin(), actualBytes.end(), kVPrintHookSite.expectedPrologue.begin(), kVPrintHookSite.expectedPrologue.end())) {
 				logs::warn(
-					"Skipping passive console output capture: {} ConsoleLog::VPrint prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
+					"Skipping passive console output observation: {} ConsoleLog::VPrint prologue mismatch at 0x{:X}. expected=[{}] actual=[{}]",
 					kVPrintHookSite.runtimeLabel,
 					target.address(),
 					FormatBytes(kVPrintHookSite.expectedPrologue),
@@ -200,7 +200,7 @@ namespace Capture::Output
 
 			auto* trampoline = static_cast<std::uint8_t*>(SKSE::GetTrampoline().allocate(kVPrintHookSite.hookSize + kAbsoluteJumpSize));
 			if (trampoline == nullptr) {
-				logs::warn("Skipping passive console output capture: failed to allocate trampoline memory");
+				logs::warn("Skipping passive console output observation: failed to allocate trampoline memory");
 				return;
 			}
 
@@ -217,14 +217,14 @@ namespace Capture::Output
 				.patchSize = kVPrintHookSite.hookSize });
 
 			logs::info(
-				"Installed passive console output capture for {} at 0x{:X} with a validated {}-byte ConsoleLog::VPrint prologue",
+				"Installed passive console output observation for {} at 0x{:X} with a validated {}-byte ConsoleLog::VPrint prologue",
 				kVPrintHookSite.runtimeLabel,
 				target.address(),
 				kVPrintHookSite.hookSize);
 		} catch (const std::exception& exception) {
-			logs::warn("Skipping passive console output capture after install failure: {}", exception.what());
+			logs::warn("Skipping passive console output observation after install failure: {}", exception.what());
 		} catch (...) {
-			logs::warn("Skipping passive console output capture after an unknown install failure");
+			logs::warn("Skipping passive console output observation after an unknown install failure");
 		}
 	}
 }

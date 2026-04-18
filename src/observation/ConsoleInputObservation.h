@@ -1,10 +1,10 @@
 #pragma once
 
-#include "config/Settings.h"
+#include "settings/Settings.h"
 
 #include <string_view>
 
-namespace Capture::Input
+namespace Observation::Input
 {
 	enum class SubmitCommandResult
 	{
@@ -13,7 +13,7 @@ namespace Capture::Input
 		kTerminalFailure
 	};
 
-	void Install(const Config::Settings& settings);
+	void Install(const Settings::Values& settings);
 	[[nodiscard]] bool CanSubmitCommands() noexcept;
 	[[nodiscard]] SubmitCommandResult SubmitCommand(std::string_view command) noexcept;
 }

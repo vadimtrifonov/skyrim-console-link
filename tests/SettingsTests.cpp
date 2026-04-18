@@ -1,5 +1,5 @@
-#include "config/Settings.h"
 #include "inbox/InboxPath.h"
+#include "settings/Settings.h"
 
 #include <Windows.h>
 
@@ -44,15 +44,15 @@ namespace
 	void TestDefaults()
 	{
 		const auto path = MakeTempIniPath();
-		const auto result = Config::LoadSettingsWithDiagnostics(path);
-		const auto defaults = Config::GetBuiltInDefaults();
+		const auto result = Settings::LoadSettingsWithDiagnostics(path);
+		const auto defaults = Settings::GetBuiltInDefaults();
 
 		Expect(result.settings.enableConsoleInputLogging == defaults.enableConsoleInputLogging, "default input logging should be enabled");
 		Expect(result.settings.enableConsoleOutputLogging == defaults.enableConsoleOutputLogging, "default output logging should be enabled");
 		Expect(result.settings.enableInbox == defaults.enableInbox, "default inbox mismatch");
 		Expect(result.settings.inboxPath == defaults.inboxPath, "default inbox path mismatch");
 		Expect(result.settings.maxInboxLinesPerTick == defaults.maxInboxLinesPerTick, "default max inbox lines per tick mismatch");
-		Expect(result.warnings.empty(), "missing config should not produce warnings");
+		Expect(result.warnings.empty(), "missing settings file should not produce warnings");
 	}
 
 	void TestOverrides()
@@ -69,14 +69,14 @@ namespace
 			"Path = Alt.inbox.txt\n"
 			"MaxLinesPerTick = 2\n");
 
-		const auto result = Config::LoadSettingsWithDiagnostics(path);
+		const auto result = Settings::LoadSettingsWithDiagnostics(path);
 
 		Expect(!result.settings.enableConsoleInputLogging, "override input logging mismatch");
 		Expect(!result.settings.enableConsoleOutputLogging, "override output logging mismatch");
 		Expect(result.settings.enableInbox, "override inbox mismatch");
 		Expect(result.settings.inboxPath == std::filesystem::path(L"Alt.inbox.txt"), "override inbox path mismatch");
 		Expect(result.settings.maxInboxLinesPerTick == 2, "override max inbox lines per tick mismatch");
-		Expect(result.warnings.empty(), "valid config should not produce warnings");
+		Expect(result.warnings.empty(), "valid settings should not produce warnings");
 		std::filesystem::remove(path);
 	}
 
@@ -91,7 +91,7 @@ namespace
 			"[Inbox]\n"
 			"MaxLinesPerTick = invalid\n");
 
-		const auto result = Config::LoadSettingsWithDiagnostics(path);
+		const auto result = Settings::LoadSettingsWithDiagnostics(path);
 
 		Expect(result.settings.enableConsoleInputLogging, "malformed bool should fall back to default");
 		Expect(result.settings.maxInboxLinesPerTick == 4, "malformed inbox uint should fall back to default");
@@ -110,7 +110,7 @@ namespace
 			"[Inbox]\n"
 			"Path =   \n");
 
-		const auto result = Config::LoadSettingsWithDiagnostics(path);
+		const auto result = Settings::LoadSettingsWithDiagnostics(path);
 
 		Expect(!result.settings.enableInbox, "empty inbox path should disable inbox");
 		Expect(result.settings.inboxPath.empty(), "empty inbox path should not keep a usable path");
@@ -131,7 +131,7 @@ namespace
 			"Path = " +
 				oversizedPath + "\n");
 
-		const auto result = Config::LoadSettingsWithDiagnostics(path);
+		const auto result = Settings::LoadSettingsWithDiagnostics(path);
 
 		Expect(!result.settings.enableInbox, "oversized inbox path should disable inbox");
 		Expect(result.settings.inboxPath.empty(), "oversized inbox path should not keep a usable path");

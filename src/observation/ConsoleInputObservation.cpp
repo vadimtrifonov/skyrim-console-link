@@ -1,4 +1,4 @@
-#include "capture/ConsoleInputCapture.h"
+#include "observation/ConsoleInputObservation.h"
 
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
@@ -62,8 +62,8 @@ namespace
 	ExecuteCommandCallback_t g_directExecuteCommand = nullptr;
 	std::uintptr_t g_executeCommandTargetAddress = 0;
 	bool g_executeCommandPathValidated = false;
-	std::atomic_bool g_pluginCaptureDisabled = false;
-	std::atomic_bool g_pluginCaptureFailureLogged = false;
+	std::atomic_bool g_pluginObservationDisabled = false;
+	std::atomic_bool g_pluginObservationFailureLogged = false;
 	std::atomic_bool g_submissionDisabled = false;
 	std::atomic_bool g_submissionFailureLogged = false;
 	std::atomic_bool g_submissionUnavailableLogged = false;
@@ -116,12 +116,12 @@ namespace
 		REL::safe_write(write.patchSiteAddress, patch.data(), write.patchSize);
 	}
 
-	void DisablePluginCapture(std::string_view reason) noexcept
+	void DisablePluginObservation(std::string_view reason) noexcept
 	{
-		g_pluginCaptureDisabled = true;
-		if (!g_pluginCaptureFailureLogged.exchange(true)) {
+		g_pluginObservationDisabled = true;
+		if (!g_pluginObservationFailureLogged.exchange(true)) {
 			try {
-				logs::warn("Disabling passive console input plugin work after failure: {}", reason);
+				logs::warn("Disabling passive console input observation after failure: {}", reason);
 			} catch (...) {
 				SwallowFailSoftBoundary();
 			}
@@ -265,18 +265,18 @@ namespace
 		case CommandExtractionStatus::kNoArgs:
 			WarnOnce(
 				g_loggedNoArgs,
-				"Passive console input capture saw ExecuteCommand with zero args; later zero-arg warnings will be suppressed");
+				"Passive console input observation saw ExecuteCommand with zero args; later zero-arg warnings will be suppressed");
 			return;
 		case CommandExtractionStatus::kNullString:
 			WarnOnce(
 				g_loggedNullString,
-				"Passive console input capture saw a null ExecuteCommand string pointer; later null-string warnings will be suppressed");
+				"Passive console input observation saw a null ExecuteCommand string pointer; later null-string warnings will be suppressed");
 			return;
 		case CommandExtractionStatus::kUnexpectedType:
 			try {
 				if (!g_loggedUnexpectedType.exchange(true)) {
 					logs::warn(
-						"Passive console input capture saw ExecuteCommand args in an unexpected shape: arg_count={} arg0_is_string={} arg0_is_stringw={}; later shape warnings will be suppressed",
+						"Passive console input observation saw ExecuteCommand args in an unexpected shape: arg_count={} arg0_is_string={} arg0_is_stringw={}; later shape warnings will be suppressed",
 						args.GetArgCount(),
 						args.GetArgCount() > 0 && args[0].IsString(),
 						args.GetArgCount() > 0 && args[0].IsStringW());
@@ -288,7 +288,7 @@ namespace
 		case CommandExtractionStatus::kUtf16ConversionFailed:
 			WarnOnce(
 				g_loggedUtf16ConversionFailure,
-				"Passive console input capture failed to convert a wide ExecuteCommand string to UTF-8; later conversion warnings will be suppressed");
+				"Passive console input observation failed to convert a wide ExecuteCommand string to UTF-8; later conversion warnings will be suppressed");
 			return;
 		}
 	}
@@ -297,29 +297,29 @@ namespace
 	{
 		CommandExtractionResult extraction;
 		std::string command;
-		if (!g_pluginCaptureDisabled.load()) {
+		if (!g_pluginObservationDisabled.load()) {
 			try {
 				extraction = ExtractCommandText(args);
 				command = extraction.command;
 				ReportExtractionDrift(extraction, args);
 			} catch (const std::exception& exception) {
-				DisablePluginCapture(exception.what());
+				DisablePluginObservation(exception.what());
 			} catch (...) {
-				DisablePluginCapture("unknown exception");
+				DisablePluginObservation("unknown exception");
 			}
 		}
 
 		g_originalExecuteCommand(args);
 
-		if (!command.empty() && !g_pluginCaptureDisabled.load()) {
+		if (!command.empty() && !g_pluginObservationDisabled.load()) {
 			Logging::LogConsoleInputLine(command);
 		}
 	}
 }
 
-namespace Capture::Input
+namespace Observation::Input
 {
-	void Install(const Config::Settings& settings)
+	void Install(const Settings::Values& settings)
 	{
 		static bool attempted = false;
 		if (attempted) {
@@ -328,12 +328,12 @@ namespace Capture::Input
 		attempted = true;
 
 		if (!settings.enableConsoleInputLogging && !settings.enableInbox) {
-			logs::info("Console input capture and inbox are disabled by config");
+			logs::info("Console input observation and inbox are disabled by settings");
 			return;
 		}
 
 		if (!REL::Module::IsVR()) {
-			logs::warn("Skipping passive console input capture: the first observational hook is VR-only");
+			logs::warn("Skipping passive console input observation: the first observation hook is VR-only");
 			return;
 		}
 
@@ -355,7 +355,7 @@ namespace Capture::Input
 
 			auto* trampoline = static_cast<std::uint8_t*>(SKSE::GetTrampoline().allocate(kExecuteCommandHookSite.hookSize + kAbsoluteJumpSize));
 			if (trampoline == nullptr) {
-				logs::warn("Skipping passive console input capture: failed to allocate trampoline memory for the ExecuteCommand callback");
+				logs::warn("Skipping passive console input observation: failed to allocate trampoline memory for the ExecuteCommand callback");
 				return;
 			}
 
@@ -372,14 +372,14 @@ namespace Capture::Input
 				.patchSize = kExecuteCommandHookSite.hookSize });
 
 			logs::info(
-				"Installed passive console input capture for {} at 0x{:X} with a validated {}-byte ExecuteCommand callback prologue",
+				"Installed passive console input observation for {} at 0x{:X} with a validated {}-byte ExecuteCommand callback prologue",
 				kExecuteCommandHookSite.runtimeLabel,
 				g_executeCommandTargetAddress,
 				kExecuteCommandHookSite.hookSize);
 		} catch (const std::exception& exception) {
-			logs::warn("Skipping passive console input capture after install failure: {}", exception.what());
+			logs::warn("Skipping passive console input observation after install failure: {}", exception.what());
 		} catch (...) {
-			logs::warn("Skipping passive console input capture after an unknown install failure");
+			logs::warn("Skipping passive console input observation after an unknown install failure");
 		}
 	}
 

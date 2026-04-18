@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config/Settings.h"
+#include "settings/Settings.h"
 
 #include <filesystem>
 
@@ -11,5 +11,5 @@ namespace Runtime
 		std::filesystem::path inboxPath;
 	};
 
-	void Initialize(const Config::Settings& settings, const RuntimePaths& paths);
+	void Initialize(const Settings::Values& settings, const RuntimePaths& paths);
 }

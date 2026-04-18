@@ -1,6 +1,13 @@
 #pragma once
 
+#ifdef _MSC_VER
+#	pragma warning(push)
+#	pragma warning(disable: 6011)  // CommonLibSSE-NG BSTHashMap iterator analysis false positive
+#endif
 #include <SKSE/SKSE.h>
+#ifdef _MSC_VER
+#	pragma warning(pop)
+#endif
 
 #include <algorithm>
 #include <array>

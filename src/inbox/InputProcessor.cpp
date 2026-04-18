@@ -131,7 +131,7 @@ namespace
 			return processor;
 		}
 
-		void Initialize(const Config::Settings& settings, const std::filesystem::path& inboxPath)
+		void Initialize(const Settings::Values& settings, const std::filesystem::path& inboxPath)
 		{
 			auto expected = false;
 			if (!_initialized.compare_exchange_strong(expected, true)) {
@@ -469,7 +469,7 @@ namespace
 			_lastFileErrorOperation.clear();
 		}
 
-		Config::Settings _settings{};
+		Settings::Values _settings{};
 		std::filesystem::path _inboxPath;
 		std::jthread _worker;
 		std::mutex _workerStartLock;
@@ -490,7 +490,7 @@ namespace
 
 namespace Inbox
 {
-	void Initialize(const Config::Settings& settings, const std::filesystem::path& inboxPath)
+	void Initialize(const Settings::Values& settings, const std::filesystem::path& inboxPath)
 	{
 		InputProcessor::GetSingleton().Initialize(settings, inboxPath);
 	}

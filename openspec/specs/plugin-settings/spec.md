@@ -1,11 +1,11 @@
 # plugin-settings Specification
 
 ## Purpose
-INI-backed startup configuration for runtime feature flags, paths, and diagnostics.
+INI-backed startup settings for runtime feature flags, paths, and diagnostics.
 
 ## Requirements
-### Requirement: Plugin reads default configuration from the SKSE plugin directory
-The system MUST load configuration from `Data/SKSE/Plugins/ConsoleLink.ini` and use that configuration to control runtime feature flags and paths.
+### Requirement: Plugin reads default settings from the SKSE plugin directory
+The system MUST load settings from `Data/SKSE/Plugins/ConsoleLink.ini` and use those settings to control runtime feature flags and paths.
 
 #### Scenario: Default settings path is resolved
 - **WHEN** startup requests the default settings file
@@ -20,11 +20,11 @@ The system MUST parse console logging and inbox settings from the INI file, MUST
 - **AND** the built-in default inbox filename is `ConsoleLink.inbox.txt`
 
 ### Requirement: Canonical inbox config names are accepted
-The system MUST accept `EnableInbox` and `[Inbox]` as the canonical config names for inbox transport settings.
+The system MUST accept `EnableInbox` and `[Inbox]` as the canonical INI key and section names for inbox transport settings.
 
 #### Scenario: Canonical inbox config names are used
 - **WHEN** the INI file sets `EnableInbox`
-- **AND** configures inbox settings under `[Inbox]`
+- **AND** defines inbox settings under `[Inbox]`
 - **THEN** the plugin loads those values for inbox transport
 
 ### Requirement: Enabled relative inbox paths resolve under the SKSE log directory
@@ -41,11 +41,11 @@ The system MUST resolve enabled relative file-backed inbox paths under the activ
 - **AND** the standard SKSE log directory cannot be resolved
 - **THEN** plugin startup fails
 
-### Requirement: Startup logging reports the active runtime configuration
-The system MUST write a startup log summary of the configuration it will actually use at runtime so an operator can confirm which file-backed features are enabled and which paths and limits are in effect.
+### Requirement: Startup logging reports the active runtime settings
+The system MUST write a startup log summary of the settings it will actually use at runtime so an operator can confirm which file-backed features are enabled and which paths and limits are in effect.
 
-#### Scenario: Startup reports runtime configuration
-- **WHEN** bootstrap completes configuration loading
+#### Scenario: Startup reports runtime settings
+- **WHEN** bootstrap completes settings loading
 - **THEN** startup logging includes whether input logging, output logging, and inbox processing are enabled or disabled
 - **AND** startup logging includes the inbox path the plugin will actually use at runtime
 - **AND** startup logging includes the configured per-tick inbox-line limit

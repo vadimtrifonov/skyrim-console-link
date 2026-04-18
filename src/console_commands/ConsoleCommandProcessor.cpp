@@ -1,8 +1,8 @@
 #include "console_commands/ConsoleCommandProcessor.h"
 
-#include "capture/ConsoleInputCapture.h"
 #include "console_commands/ConsoleCommandReadinessState.h"
 #include "logging/ConsoleActivityLog.h"
+#include "observation/ConsoleInputObservation.h"
 #include "pch.h"
 
 #include "RE/C/Console.h"
@@ -31,10 +31,10 @@ namespace
 		return state;
 	}
 
-	ReadinessSnapshot CaptureReadiness() noexcept
+	ReadinessSnapshot SnapshotReadiness() noexcept
 	{
 		auto& state = GetState();
-		if (state.terminalFailure || !REL::Module::IsVR() || !Capture::Input::CanSubmitCommands()) {
+		if (state.terminalFailure || !REL::Module::IsVR() || !Observation::Input::CanSubmitCommands()) {
 			return { false, "console command submission is unavailable" };
 		}
 
@@ -81,28 +81,28 @@ namespace ConsoleCommands
 			return;
 		}
 
-		UpdateReadinessTransition(CaptureReadiness());
+		UpdateReadinessTransition(SnapshotReadiness());
 	}
 
 	ProcessResult Process(std::string_view line) noexcept
 	{
 		try {
-			const auto snapshot = CaptureReadiness();
+			const auto snapshot = SnapshotReadiness();
 			UpdateReadinessTransition(snapshot);
 			if (!snapshot.ready) {
 				Logging::LogLocalActivityLine(snapshot.rejectionMessage);
 				return ProcessResult::kRejected;
 			}
 
-			const auto result = Capture::Input::SubmitCommand(line);
+			const auto result = Observation::Input::SubmitCommand(line);
 			switch (result) {
-			case Capture::Input::SubmitCommandResult::kSubmitted:
+			case Observation::Input::SubmitCommandResult::kSubmitted:
 				return ProcessResult::kHandled;
-			case Capture::Input::SubmitCommandResult::kDeferred:
+			case Observation::Input::SubmitCommandResult::kDeferred:
 				Logging::LogLocalActivityLine("console commands are not ready");
 				UpdateReadinessTransition({ false, "console commands are not ready" });
 				return ProcessResult::kRejected;
-			case Capture::Input::SubmitCommandResult::kTerminalFailure:
+			case Observation::Input::SubmitCommandResult::kTerminalFailure:
 			default:
 				GetState().terminalFailure = true;
 				UpdateReadinessTransition({ false, "console command submission is unavailable" });
