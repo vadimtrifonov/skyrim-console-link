@@ -15,6 +15,7 @@ void RunZeroInboxTests();
 void RunConsoleActivityTaxonomyTests();
 void RunLocalCommandReadinessStateTests();
 void RunLookupCommandTests();
+void RunLookupLvliCommandTests();
 void RunLookupPrefixCommandTests();
 
 namespace
@@ -165,6 +166,7 @@ int main() noexcept
 		RunConsoleActivityTaxonomyTests();
 		RunLocalCommandReadinessStateTests();
 		RunLookupCommandTests();
+		RunLookupLvliCommandTests();
 		RunLookupPrefixCommandTests();
 		std::cout << "All tests passed.\n";
 		return 0;

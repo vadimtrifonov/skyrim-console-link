@@ -2,6 +2,7 @@
 
 #include "local_commands/LocalCommandReadinessState.h"
 #include "local_commands/LookupCommand.h"
+#include "local_commands/LookupLvliCommand.h"
 #include "local_commands/LookupPrefixCommand.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
@@ -16,6 +17,7 @@ namespace
 	enum class LocalCommandKind : std::uint8_t
 	{
 		kLookup,
+		kLookupLvli,
 		kLookupPrefix,
 		kUnknown
 	};
@@ -65,6 +67,9 @@ namespace
 		}
 		if (commandName == "cdbg.lookup-prefix") {
 			return LocalCommandKind::kLookupPrefix;
+		}
+		if (commandName == "cdbg.lookup-lvli") {
+			return LocalCommandKind::kLookupLvli;
 		}
 
 		return LocalCommandKind::kUnknown;
@@ -170,6 +175,9 @@ namespace LocalCommands
 			case LocalCommandKind::kLookup:
 				responseLines = ExecuteLookupCommand(arguments);
 				break;
+			case LocalCommandKind::kLookupLvli:
+				responseLines = ExecuteLookupLvliCommand(arguments);
+				break;
 			case LocalCommandKind::kLookupPrefix:
 				responseLines = ExecuteLookupPrefixCommand(arguments);
 				break;
@@ -177,7 +185,7 @@ namespace LocalCommands
 			default:
 				responseLines.push_back(
 					"unknown local command \"" + std::string(commandName) +
-					"\"; supported: cdbg.lookup <EditorID>, cdbg.lookup-prefix <prefix> [limit]");
+					"\"; supported: cdbg.lookup <EditorID>, cdbg.lookup-prefix <prefix> [limit], cdbg.lookup-lvli <EditorID> [limit]");
 				break;
 			}
 
