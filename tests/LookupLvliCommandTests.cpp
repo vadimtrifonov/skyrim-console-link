@@ -1,4 +1,5 @@
-#include "local_commands/LookupLvliCommand.h"
+#include "local_commands/lookup_lvli/LookupLvli.h"
+#include "local_commands/lookup_lvli/LookupLvliCommand.h"
 
 #include <stdexcept>
 #include <string_view>

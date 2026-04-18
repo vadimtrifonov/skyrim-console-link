@@ -1,9 +1,11 @@
 #include "local_commands/LocalCommandProcessor.h"
 
-#include "local_commands/LocalCommandReadinessState.h"
-#include "local_commands/LookupCommand.h"
-#include "local_commands/LookupLvliCommand.h"
-#include "local_commands/LookupPrefixCommand.h"
+#include "local_commands/lookup/LookupCommand.h"
+#include "local_commands/lookup/LookupFormCommand.h"
+#include "local_commands/lookup_lvli/LookupLvliCommand.h"
+#include "local_commands/lookup_lvli/LookupLvliFormCommand.h"
+#include "local_commands/lookup_prefix/LookupPrefixCommand.h"
+#include "local_commands/support/LocalCommandParsing.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 
@@ -17,48 +19,15 @@ namespace
 	enum class LocalCommandKind : std::uint8_t
 	{
 		kLookup,
+		kLookupForm,
 		kLookupLvli,
+		kLookupLvliForm,
 		kLookupPrefix,
 		kUnknown
 	};
 
-	std::string_view TrimAscii(std::string_view value) noexcept
-	{
-		const auto isSpace = [](const unsigned char ch) noexcept {
-			return std::isspace(ch) != 0;
-		};
-
-		while (!value.empty() && isSpace(static_cast<unsigned char>(value.front()))) {
-			value.remove_prefix(1);
-		}
-
-		while (!value.empty() && isSpace(static_cast<unsigned char>(value.back()))) {
-			value.remove_suffix(1);
-		}
-
-		return value;
-	}
-
-	std::string_view ConsumeToken(std::string_view& value) noexcept
-	{
-		value = TrimAscii(value);
-		const auto tokenEnd = value.find_first_of(" \t");
-		if (tokenEnd == std::string_view::npos) {
-			const auto token = value;
-			value = {};
-			return token;
-		}
-
-		const auto token = value.substr(0, tokenEnd);
-		value.remove_prefix(tokenEnd);
-		value = TrimAscii(value);
-		return token;
-	}
-
-	void EmitLocalResponseLine(std::string_view line) noexcept
-	{
-		Logging::LogLocalActivityLine(line);
-	}
+	using LocalCommands::ConsumeToken;
+	using LocalCommands::TrimAscii;
 
 	LocalCommandKind ParseLocalCommandKind(std::string_view commandName) noexcept
 	{
@@ -68,8 +37,14 @@ namespace
 		if (commandName == "cdbg.lookup-prefix") {
 			return LocalCommandKind::kLookupPrefix;
 		}
+		if (commandName == "cdbg.lookup-form") {
+			return LocalCommandKind::kLookupForm;
+		}
 		if (commandName == "cdbg.lookup-lvli") {
 			return LocalCommandKind::kLookupLvli;
+		}
+		if (commandName == "cdbg.lookup-lvli-form") {
+			return LocalCommandKind::kLookupLvliForm;
 		}
 
 		return LocalCommandKind::kUnknown;
@@ -78,7 +53,7 @@ namespace
 	struct LocalCommandState
 	{
 		std::mutex lock;
-		LocalCommands::LocalCommandReadinessState readiness;
+		bool ready = false;
 		bool initialized = false;
 	};
 
@@ -91,15 +66,15 @@ namespace
 	void OnDataLoaded() noexcept
 	{
 		auto& state = GetState();
-		auto transition = LocalCommands::LocalCommandReadinessTransition::kNone;
 		{
 			std::scoped_lock lock(state.lock);
-			transition = state.readiness.ObserveDataLoaded();
+			if (state.ready) {
+				return;
+			}
+			state.ready = true;
 		}
 
-		if (transition == LocalCommands::LocalCommandReadinessTransition::kBecameReady) {
-			Logging::LogLocalActivityLine("local commands are ready");
-		}
+		Logging::LogLocalActivityLine("local commands are ready");
 	}
 
 	void MessageHandler(SKSE::MessagingInterface::Message* message)
@@ -156,7 +131,7 @@ namespace LocalCommands
 			const auto ready = [&] {
 				auto& state = GetState();
 				std::scoped_lock lock(state.lock);
-				return state.readiness.IsReady();
+				return state.ready;
 			}();
 
 			if (!ready) {
@@ -175,8 +150,14 @@ namespace LocalCommands
 			case LocalCommandKind::kLookup:
 				responseLines = ExecuteLookupCommand(arguments);
 				break;
+			case LocalCommandKind::kLookupForm:
+				responseLines = ExecuteLookupFormCommand(arguments);
+				break;
 			case LocalCommandKind::kLookupLvli:
 				responseLines = ExecuteLookupLvliCommand(arguments);
+				break;
+			case LocalCommandKind::kLookupLvliForm:
+				responseLines = ExecuteLookupLvliFormCommand(arguments);
 				break;
 			case LocalCommandKind::kLookupPrefix:
 				responseLines = ExecuteLookupPrefixCommand(arguments);
@@ -185,12 +166,12 @@ namespace LocalCommands
 			default:
 				responseLines.push_back(
 					"unknown local command \"" + std::string(commandName) +
-					"\"; supported: cdbg.lookup <EditorID>, cdbg.lookup-prefix <prefix> [limit], cdbg.lookup-lvli <EditorID> [limit]");
+					"\"; supported: cdbg.lookup <EditorID>, cdbg.lookup-prefix <prefix> [limit], cdbg.lookup-form <plugin>|<local-formid>, cdbg.lookup-lvli <EditorID> [limit], cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]");
 				break;
 			}
 
 			for (const auto& responseLine : responseLines) {
-				EmitLocalResponseLine(responseLine);
+				Logging::LogLocalActivityLine(responseLine);
 			}
 
 			return ProcessResult::kHandled;

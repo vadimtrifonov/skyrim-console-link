@@ -1,4 +1,4 @@
-#include "local_commands/LookupPrefixCommand.h"
+#include "local_commands/lookup_prefix/LookupPrefixCommand.h"
 
 #include <stdexcept>
 #include <string_view>

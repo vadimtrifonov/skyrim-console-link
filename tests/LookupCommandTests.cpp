@@ -1,4 +1,4 @@
-#include "local_commands/LookupCommand.h"
+#include "local_commands/lookup/LookupCommand.h"
 
 #include <stdexcept>
 #include <string_view>

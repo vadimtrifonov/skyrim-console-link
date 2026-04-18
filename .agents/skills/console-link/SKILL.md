@@ -37,9 +37,13 @@ description: Operate ConsoleLink in Skyrim VR. Use to find logs and inbox paths,
   - `cdbg.lookup <EditorID>`: exact Editor ID lookup.
   - `cdbg.lookup-prefix <prefix> [limit]`: bounded Editor ID prefix lookup.
     Default limit: `10`.
+  - `cdbg.lookup-form <plugin>|<local-formid>`: exact form lookup by plugin-qualified local form ID.
   - `cdbg.lookup-lvli <EditorID> [limit]`: bounded direct leveled-list inspection by exact Editor ID.
     Default limit: `10`.
-- `cdbg.lookup-lvli` distinguishes `miss` from wrong-type and emits a summary plus direct-entry lines.
+  - `cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]`: bounded direct leveled-list inspection by plugin-qualified local form ID.
+    Default limit: `10`.
+- Form-key commands use `<plugin>|<local-formid>` such as `Skyrim.esm|0003DF19`.
+- `cdbg.lookup-lvli` and `cdbg.lookup-lvli-form` distinguish `miss` from wrong-type and emit a summary plus direct-entry lines.
 - Local commands become ready after `kDataLoaded`.
 - Local command requests, responses, and readiness messages appear as `[local]`.
 - `cdbg.` commands staying local is expected.

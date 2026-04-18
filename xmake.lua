@@ -95,9 +95,14 @@ target("ConsoleLinkTests")
 
     add_files(
         "src/settings/Settings.cpp",
-        "src/local_commands/LookupCommand.cpp",
-        "src/local_commands/LookupLvliCommand.cpp",
-        "src/local_commands/LookupPrefixCommand.cpp",
+        "src/local_commands/support/FormKey.cpp",
+        "src/local_commands/lookup/LookupCommand.cpp",
+        "src/local_commands/lookup/LookupFormCommand.cpp",
+        "src/local_commands/lookup_lvli/LookupLvliCommand.cpp",
+        "src/local_commands/lookup_lvli/LookupLvliFormat.cpp",
+        "src/local_commands/lookup_lvli/LookupLvliFormCommand.cpp",
+        "src/local_commands/lookup_lvli/LookupLvliInspect.cpp",
+        "src/local_commands/lookup_prefix/LookupPrefixCommand.cpp",
         "src/inbox/InboxState.cpp",
         "src/inbox/InboxPath.cpp",
         "src/inbox/ZeroInbox.cpp",

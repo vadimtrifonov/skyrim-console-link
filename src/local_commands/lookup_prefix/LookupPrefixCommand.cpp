@@ -1,77 +1,17 @@
-#include "local_commands/LookupPrefixCommand.h"
+#include "local_commands/lookup_prefix/LookupPrefixCommand.h"
 
+#include "local_commands/support/FormFormatting.h"
+#include "local_commands/support/LocalCommandParsing.h"
 #include "pch.h"
-
-#include <cctype>
-#include <charconv>
-#include <iomanip>
-#include <sstream>
 
 namespace
 {
 	constexpr std::size_t kDefaultLookupPrefixLimit = 10;
 
-	std::string_view TrimAscii(std::string_view value) noexcept
-	{
-		const auto isSpace = [](const unsigned char ch) noexcept {
-			return std::isspace(ch) != 0;
-		};
-
-		while (!value.empty() && isSpace(static_cast<unsigned char>(value.front()))) {
-			value.remove_prefix(1);
-		}
-
-		while (!value.empty() && isSpace(static_cast<unsigned char>(value.back()))) {
-			value.remove_suffix(1);
-		}
-
-		return value;
-	}
-
-	std::string_view ConsumeToken(std::string_view& value) noexcept
-	{
-		value = TrimAscii(value);
-		const auto tokenEnd = value.find_first_of(" \t");
-		if (tokenEnd == std::string_view::npos) {
-			const auto token = value;
-			value = {};
-			return token;
-		}
-
-		const auto token = value.substr(0, tokenEnd);
-		value.remove_prefix(tokenEnd);
-		value = TrimAscii(value);
-		return token;
-	}
-
-	std::string FormatFormID(const std::uint32_t formID)
-	{
-		std::ostringstream stream;
-		stream << "0x" << std::uppercase << std::hex << std::setw(8) << std::setfill('0') << formID;
-		return stream.str();
-	}
-
-	std::string_view DescribeFormType(const RE::FormType formType) noexcept
-	{
-		switch (formType) {
-		case RE::FormType::LeveledItem:
-			return "LVLI";
-		case RE::FormType::Weapon:
-			return "WEAP";
-		case RE::FormType::Armor:
-			return "ARMO";
-		case RE::FormType::NPC:
-			return "NPC_";
-		case RE::FormType::Outfit:
-			return "OTFT";
-		case RE::FormType::Keyword:
-			return "KYWD";
-		case RE::FormType::ConstructibleObject:
-			return "COBJ";
-		default:
-			return "FORM";
-		}
-	}
+	using LocalCommands::ConsumeToken;
+	using LocalCommands::DescribeFormType;
+	using LocalCommands::FormatFormID;
+	using LocalCommands::TrimAscii;
 
 	struct LookupPrefixArguments
 	{
@@ -79,20 +19,7 @@ namespace
 		std::size_t limit = kDefaultLookupPrefixLimit;
 	};
 
-	[[nodiscard]] std::optional<std::size_t> ParsePositiveLimit(std::string_view token) noexcept
-	{
-		if (token.empty()) {
-			return std::nullopt;
-		}
-
-		std::size_t value = 0;
-		const auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value);
-		if (ec != std::errc() || ptr != token.data() + token.size() || value == 0) {
-			return std::nullopt;
-		}
-
-		return value;
-	}
+	using LocalCommands::ParsePositiveLimit;
 
 	[[nodiscard]] std::optional<LookupPrefixArguments> ParseLookupPrefixArguments(std::string_view arguments) noexcept
 	{

@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace LocalCommands
@@ -45,9 +44,4 @@ namespace LocalCommands
 		LookupLvliWrongType wrongType;
 		LookupLvliHit hit;
 	};
-
-	[[nodiscard]] std::vector<std::string> ExecuteLookupLvliCommand(std::string_view arguments);
-	[[nodiscard]] std::vector<std::string> ExecuteLookupLvliCommand(
-		std::string_view arguments,
-		const LookupLvliResult& result);
 }
