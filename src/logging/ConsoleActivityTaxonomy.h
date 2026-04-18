@@ -8,8 +8,8 @@ namespace Logging
 {
 	enum class ConsoleActivityKind
 	{
-		kObservedConsoleOutput,
-		kObservedConsoleInput,
+		kCapturedConsoleOutput,
+		kCapturedConsoleInput,
 		kSubmittedConsoleCommand,
 		kLocalActivity
 	};
@@ -17,9 +17,9 @@ namespace Logging
 	[[nodiscard]] inline std::string_view DescribeConsoleActivityChannel(const ConsoleActivityKind kind)
 	{
 		switch (kind) {
-		case ConsoleActivityKind::kObservedConsoleOutput:
+		case ConsoleActivityKind::kCapturedConsoleOutput:
 			return "console-out";
-		case ConsoleActivityKind::kObservedConsoleInput:
+		case ConsoleActivityKind::kCapturedConsoleInput:
 			return "console-in";
 		case ConsoleActivityKind::kSubmittedConsoleCommand:
 			return "console-submit";

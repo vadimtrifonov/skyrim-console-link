@@ -38,7 +38,7 @@ The system MUST reject routed non-local lines through `[local]` activity when co
 #### Scenario: Console command arrives while the validated path is unavailable
 - **WHEN** a routed non-local line reaches console-command handling
 - **AND** the validated `ExecuteCommand` path is unavailable
-- **THEN** the plugin records a `[local]` rejection explaining console command submission is unavailable
+- **THEN** the plugin records a `[local]` rejection explaining console commands are unavailable
 - **AND** it does not queue the line for later execution
 
 ### Requirement: Console-command readiness transitions are announced through local activity
@@ -48,8 +48,12 @@ The system MUST announce console-command readiness transitions through `[local]`
 - **WHEN** console-command readiness becomes active
 - **THEN** it records a `[local]` line stating console commands are ready
 
+#### Scenario: Console commands become not ready
+- **WHEN** console-command readiness transitions from active to not-ready
+- **THEN** it records a `[local]` line stating console commands are not ready
+
 #### Scenario: Console commands become unavailable
-- **WHEN** console-command readiness transitions from active to inactive
+- **WHEN** console-command readiness transitions from active or not-ready to unavailable
 - **THEN** it records a `[local]` line stating console commands are unavailable
 
 ### Requirement: Console-command processing stops after terminal submission failure

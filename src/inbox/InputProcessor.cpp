@@ -13,10 +13,10 @@ namespace
 {
 	using namespace std::chrono_literals;
 
+	void SwallowFailSoftBoundary() noexcept {}
+
 	constexpr auto kPollInterval = 200ms;
 	constexpr std::size_t kMaxReadBytesPerPoll = std::size_t{ 64 } * 1024;
-
-	void SwallowFailSoftBoundary() noexcept {}
 
 	bool TryGetFileIdentity(HANDLE handle, Inbox::InboxFileIdentity& identity, DWORD& errorCode) noexcept
 	{
@@ -152,7 +152,7 @@ namespace
 			_inboxPath = inboxPath;
 
 			LocalCommands::Initialize();
-			ConsoleCommands::Initialize();
+			ConsoleCommands::Initialize(settings);
 
 			logs::info("Inbox processing watching '{}'", PathToString(_inboxPath));
 			StartWorker();
@@ -329,7 +329,7 @@ namespace
 			if (result.queueAtCapacity) {
 				if (!_loggedQueueFull) {
 					logs::warn(
-						"Pausing inbox ingestion for '{}' because the pending line queue reached {}; buffered lines will wait until the queue drains",
+						"Pausing inbox ingestion for '{}' because the pending line queue reached {}; later inbox lines will not be ingested until the queue drains",
 						PathToString(_inboxPath),
 						_inboxState.MaxPendingLines());
 					_loggedQueueFull = true;
@@ -388,8 +388,6 @@ namespace
 				_tickScheduled = false;
 				return;
 			}
-
-			ConsoleCommands::PollReadiness();
 
 			const auto lineBudget = std::max<std::uint32_t>(_settings.maxInboxLinesPerTick, 1);
 			for (std::uint32_t index = 0; index < lineBudget; ++index) {

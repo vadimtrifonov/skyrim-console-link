@@ -11,14 +11,14 @@
 
 namespace
 {
+	void SwallowFailSoftBoundary() noexcept {}
+
 	enum class LocalCommandKind : std::uint8_t
 	{
 		kLookup,
 		kLookupPrefix,
 		kUnknown
 	};
-
-	void SwallowFailSoftBoundary() noexcept {}
 
 	std::string_view TrimAscii(std::string_view value) noexcept
 	{

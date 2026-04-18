@@ -13,7 +13,6 @@
 void RunInboxStateTests();
 void RunZeroInboxTests();
 void RunConsoleActivityTaxonomyTests();
-void RunConsoleCommandReadinessStateTests();
 void RunLocalCommandReadinessStateTests();
 void RunLookupCommandTests();
 void RunLookupPrefixCommandTests();
@@ -164,7 +163,6 @@ int main() noexcept
 		RunInboxStateTests();
 		RunZeroInboxTests();
 		RunConsoleActivityTaxonomyTests();
-		RunConsoleCommandReadinessStateTests();
 		RunLocalCommandReadinessStateTests();
 		RunLookupCommandTests();
 		RunLookupPrefixCommandTests();

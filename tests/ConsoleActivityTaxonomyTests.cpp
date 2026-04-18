@@ -20,11 +20,11 @@ namespace
 		using Logging::ConsoleActivityKind;
 
 		Expect(
-			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kObservedConsoleOutput) == "console-out",
-			"observed console output should use console-out");
+			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kCapturedConsoleOutput) == "console-out",
+			"captured console output should use console-out");
 		Expect(
-			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kObservedConsoleInput) == "console-in",
-			"observed console input should use console-in");
+			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kCapturedConsoleInput) == "console-in",
+			"captured console input should use console-in");
 		Expect(
 			Logging::DescribeConsoleActivityChannel(ConsoleActivityKind::kSubmittedConsoleCommand) == "console-submit",
 			"submitted console commands should use console-submit");

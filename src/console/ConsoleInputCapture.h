@@ -2,7 +2,7 @@
 
 #include "settings/Settings.h"
 
-namespace Observation::Output
+namespace Console::InputCapture
 {
 	void Install(const Settings::Values& settings);
 }

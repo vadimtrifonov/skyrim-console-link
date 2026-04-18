@@ -65,7 +65,7 @@ namespace
 
 namespace Logging
 {
-	std::optional<std::string> InitializeConsoleActivityLog()
+	std::expected<void, std::string> InitializeConsoleActivityLog()
 	{
 		std::scoped_lock lock(g_consoleLogLock);
 		g_consoleActivityLogger.reset();
@@ -75,7 +75,7 @@ namespace Logging
 		auto logPath = logs::log_directory();
 		if (!logPath) {
 			g_consoleActivityDisabled = true;
-			return "Could not resolve the standard SKSE log directory for the console activity log";
+			return std::unexpected("Could not resolve the standard SKSE log directory for the console activity log");
 		}
 
 		*logPath /= GetConsoleActivityLogFilename();
@@ -88,24 +88,24 @@ namespace Logging
 			logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 			g_consoleActivityLogger = std::move(logger);
 			logs::info("Console activity log: {}", logPath->string());
-			return std::nullopt;
+			return {};
 		} catch (const std::exception& exception) {
 			g_consoleActivityDisabled = true;
-			return "Failed to initialize console activity log at " + logPath->string() + ": " + exception.what();
+			return std::unexpected("Failed to initialize console activity log at " + logPath->string() + ": " + exception.what());
 		} catch (...) {
 			g_consoleActivityDisabled = true;
-			return "Failed to initialize console activity log at " + logPath->string() + ": unknown exception";
+			return std::unexpected("Failed to initialize console activity log at " + logPath->string() + ": unknown exception");
 		}
 	}
 
 	void LogConsoleOutputLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine(ConsoleActivityKind::kObservedConsoleOutput, line);
+		LogConsoleActivityLine(ConsoleActivityKind::kCapturedConsoleOutput, line);
 	}
 
 	void LogConsoleInputLine(std::string_view line) noexcept
 	{
-		LogConsoleActivityLine(ConsoleActivityKind::kObservedConsoleInput, line);
+		LogConsoleActivityLine(ConsoleActivityKind::kCapturedConsoleInput, line);
 	}
 
 	void LogConsoleSubmitLine(std::string_view line) noexcept

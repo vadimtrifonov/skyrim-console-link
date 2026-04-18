@@ -1,27 +1,26 @@
 #include "console_commands/ConsoleCommandProcessor.h"
 
-#include "console_commands/ConsoleCommandReadinessState.h"
+#include "console/ConsoleMenuState.h"
+#include "console/ExecuteCommandSeam.h"
 #include "logging/ConsoleActivityLog.h"
-#include "observation/ConsoleInputObservation.h"
 #include "pch.h"
 
 #include "RE/C/Console.h"
+#include "RE/F/FxDelegateArgs.h"
 #include "RE/U/UI.h"
 
 namespace
 {
-	void SwallowFailSoftBoundary() noexcept {}
-
-	struct ReadinessSnapshot
+	enum class ConsoleCommandReadinessState
 	{
-		bool ready = false;
-		std::string_view rejectionMessage = "console commands are not ready";
+		kReady,
+		kNotReady,
+		kUnavailable
 	};
 
 	struct ConsoleCommandState
 	{
-		ConsoleCommands::ConsoleCommandReadinessState readiness;
-		bool terminalFailure = false;
+		ConsoleCommandReadinessState readiness = ConsoleCommandReadinessState::kNotReady;
 		bool initialized = false;
 	};
 
@@ -31,101 +30,129 @@ namespace
 		return state;
 	}
 
-	ReadinessSnapshot SnapshotReadiness() noexcept
+	void UpdateReadiness(const ConsoleCommandReadinessState readiness) noexcept
 	{
 		auto& state = GetState();
-		if (state.terminalFailure || !REL::Module::IsVR() || !Observation::Input::CanSubmitCommands()) {
-			return { false, "console command submission is unavailable" };
+		if (state.readiness == readiness) {
+			return;
 		}
 
-		auto* ui = RE::UI::GetSingleton();
-		if (ui == nullptr) {
-			return { false, "console commands are not ready" };
-		}
-
-		auto console = ui->GetMenu<RE::Console>();
-		if (!console || !console->uiMovie) {
-			return { false, "console commands are not ready" };
-		}
-
-		return { true, {} };
-	}
-
-	void UpdateReadinessTransition(const ReadinessSnapshot& snapshot) noexcept
-	{
-		auto& state = GetState();
-		switch (state.readiness.Observe(snapshot.ready)) {
-		case ConsoleCommands::ConsoleCommandReadinessTransition::kBecameReady:
+		state.readiness = readiness;
+		switch (readiness) {
+		case ConsoleCommandReadinessState::kReady:
 			Logging::LogLocalActivityLine("console commands are ready");
 			break;
-		case ConsoleCommands::ConsoleCommandReadinessTransition::kBecameUnavailable:
+		case ConsoleCommandReadinessState::kNotReady:
+			Logging::LogLocalActivityLine("console commands are not ready");
+			break;
+		case ConsoleCommandReadinessState::kUnavailable:
+		default:
 			Logging::LogLocalActivityLine("console commands are unavailable");
 			break;
-		case ConsoleCommands::ConsoleCommandReadinessTransition::kNone:
-		default:
-			break;
 		}
+	}
+
+	void OnConsoleMenuStateChange(const bool isOpen) noexcept
+	{
+		auto& state = GetState();
+		if (!state.initialized || state.readiness == ConsoleCommandReadinessState::kUnavailable) {
+			return;
+		}
+
+		UpdateReadiness(isOpen ? ConsoleCommandReadinessState::kReady : ConsoleCommandReadinessState::kNotReady);
 	}
 }
 
 namespace ConsoleCommands
 {
-	void Initialize() noexcept
+	void Initialize(const Settings::Values&) noexcept
 	{
-		GetState().initialized = true;
-	}
-
-	void PollReadiness() noexcept
-	{
-		if (!GetState().initialized) {
+		auto& state = GetState();
+		if (state.initialized) {
 			return;
 		}
 
-		UpdateReadinessTransition(SnapshotReadiness());
+		state.initialized = true;
+		if (!REL::Module::IsVR()) {
+			logs::warn("Skipping console command submission seam validation: the ExecuteCommand seam is VR-only");
+			state.readiness = ConsoleCommandReadinessState::kUnavailable;
+			return;
+		}
+
+		if (!Console::ExecuteCommandSeam::Validate()) {
+			state.readiness = ConsoleCommandReadinessState::kUnavailable;
+			return;
+		}
+
+		Console::MenuState::SetStateChangeHandler(&::OnConsoleMenuStateChange);
+		UpdateReadiness(
+			Console::MenuState::IsConsoleMenuOpen() ?
+				ConsoleCommandReadinessState::kReady :
+				ConsoleCommandReadinessState::kNotReady);
 	}
 
 	ProcessResult Process(std::string_view line) noexcept
 	{
 		try {
-			const auto snapshot = SnapshotReadiness();
-			UpdateReadinessTransition(snapshot);
-			if (!snapshot.ready) {
-				Logging::LogLocalActivityLine(snapshot.rejectionMessage);
+			if (line.empty()) {
+				Logging::LogLocalActivityLine("empty console command");
 				return ProcessResult::kRejected;
 			}
 
-			const auto result = Observation::Input::SubmitCommand(line);
-			switch (result) {
-			case Observation::Input::SubmitCommandResult::kSubmitted:
-				return ProcessResult::kHandled;
-			case Observation::Input::SubmitCommandResult::kDeferred:
+			if (GetState().readiness == ConsoleCommandReadinessState::kUnavailable) {
+				Logging::LogLocalActivityLine("console commands are unavailable");
+				return ProcessResult::kRejected;
+			}
+
+			auto* ui = RE::UI::GetSingleton();
+			if (ui == nullptr) {
+				logs::warn("Console command submission is rejecting commands because RE::UI is not available");
 				Logging::LogLocalActivityLine("console commands are not ready");
-				UpdateReadinessTransition({ false, "console commands are not ready" });
-				return ProcessResult::kRejected;
-			case Observation::Input::SubmitCommandResult::kTerminalFailure:
-			default:
-				GetState().terminalFailure = true;
-				UpdateReadinessTransition({ false, "console command submission is unavailable" });
-				Logging::LogLocalActivityLine("console command submission is unavailable");
 				return ProcessResult::kRejected;
 			}
+
+			if (!Console::MenuState::IsConsoleMenuOpen()) {
+				logs::warn("Console command submission is rejecting commands because the console menu is not open");
+				Logging::LogLocalActivityLine("console commands are not ready");
+				return ProcessResult::kRejected;
+			}
+
+			auto console = ui->GetMenu<RE::Console>();
+			if (!console) {
+				logs::warn("Console command submission is rejecting commands because the console menu is not open");
+				Logging::LogLocalActivityLine("console commands are not ready");
+				return ProcessResult::kRejected;
+			}
+
+			auto movie = console->uiMovie;
+			if (!movie) {
+				logs::warn("Console command submission is rejecting commands because the console movie is not available");
+				Logging::LogLocalActivityLine("console commands are not ready");
+				return ProcessResult::kRejected;
+			}
+
+			std::array<RE::GFxValue, 1> args{ RE::GFxValue(line) };
+			RE::FxDelegateArgs delegateArgs(RE::GFxValue{}, console.get(), movie.get(), args.data(), static_cast<std::uint32_t>(args.size()));
+			if (Console::ExecuteCommandSeam::Invoke(delegateArgs) != Console::ExecuteCommandSeam::InvokeResult::kInvoked) {
+				logs::warn("Disabling console command submission after failure: ExecuteCommand seam invocation failed");
+				UpdateReadiness(ConsoleCommandReadinessState::kUnavailable);
+				return ProcessResult::kRejected;
+			}
+
+			if (GetState().readiness != ConsoleCommandReadinessState::kReady) {
+				logs::warn("Console command submission succeeded without processor being ready; the readiness state was stale");
+			}
+
+			UpdateReadiness(ConsoleCommandReadinessState::kReady);
+			Logging::LogConsoleSubmitLine(line);
+			return ProcessResult::kHandled;
 		} catch (const std::exception& exception) {
-			try {
-				logs::warn("Console command processor failed: {}", exception.what());
-			} catch (...) {
-				SwallowFailSoftBoundary();
-			}
+			logs::warn("Console command processor failed: {}", exception.what());
 		} catch (...) {
-			try {
-				logs::warn("Console command processor failed: unknown exception");
-			} catch (...) {
-				SwallowFailSoftBoundary();
-			}
+			logs::warn("Console command processor failed: unknown exception");
 		}
 
-		GetState().terminalFailure = true;
-		UpdateReadinessTransition({ false, "console command submission is unavailable" });
-		Logging::LogLocalActivityLine("console command submission is unavailable");
+		UpdateReadiness(ConsoleCommandReadinessState::kUnavailable);
 		return ProcessResult::kRejected;
 	}
 }

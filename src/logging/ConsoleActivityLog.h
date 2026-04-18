@@ -1,6 +1,6 @@
 #pragma once
 
-#include <optional>
+#include <expected>
 #include <string>
 #include <string_view>
 
@@ -11,7 +11,7 @@ namespace Logging
 		return "ConsoleLink.activity.log";
 	}
 
-	[[nodiscard]] std::optional<std::string> InitializeConsoleActivityLog();
+	[[nodiscard]] std::expected<void, std::string> InitializeConsoleActivityLog();
 	void LogConsoleInputLine(std::string_view line) noexcept;
 	void LogConsoleOutputLine(std::string_view line) noexcept;
 	void LogConsoleSubmitLine(std::string_view line) noexcept;
