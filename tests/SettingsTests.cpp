@@ -11,7 +11,7 @@
 #include <string_view>
 
 void RunInboxStateTests();
-void RunZeroInboxTests();
+void RunStartupInboxClearTests();
 void RunConsoleActivityTaxonomyTests();
 void RunFormKeyTests();
 void RunLookupCommandTests();
@@ -164,7 +164,7 @@ int main() noexcept
 		TestOversizedInboxPathDisablesInbox();
 		TestRelativeInboxPathResolvesUnderLogDirectory();
 		RunInboxStateTests();
-		RunZeroInboxTests();
+		RunStartupInboxClearTests();
 		RunConsoleActivityTaxonomyTests();
 		RunFormKeyTests();
 		RunLookupCommandTests();

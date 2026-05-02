@@ -103,9 +103,10 @@ target("ConsoleLinkTests")
         "src/local_commands/lookup_lvli/LookupLvliFormCommand.cpp",
         "src/local_commands/lookup_lvli/LookupLvliInspect.cpp",
         "src/local_commands/lookup_prefix/LookupPrefixCommand.cpp",
+        "src/inbox/InboxFileReader.cpp",
         "src/inbox/InboxState.cpp",
         "src/inbox/InboxPath.cpp",
-        "src/inbox/ZeroInbox.cpp",
+        "src/inbox/StartupInboxClear.cpp",
         "tests/**.cpp"
     )
 

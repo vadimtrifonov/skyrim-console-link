@@ -24,4 +24,4 @@ description: Build, test, and verify ConsoleLink locally. Troubleshoot toolchain
 ## Troubleshooting
 
 - If `xmake` incorrectly selects `mingw` or cannot find `cc`/`cxx`, rerun from PowerShell or the VS dev shell instead of Git Bash/MSYS.
-- If the wrong toolchain is still inherited, clear `MSYSTEM`, `MINGW_PREFIX`, and `MSYS2_PATH_TYPE` before rerunning build, test, or verify.
+- If the wrong toolchain is still inherited, clear `MSYSTEM`, `MINGW_PREFIX`, and `MSYS2_PATH_TYPE` inside PowerShell before rerunning build, test, or verify.

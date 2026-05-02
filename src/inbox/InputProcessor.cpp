@@ -1,13 +1,16 @@
 #include "inbox/InputProcessor.h"
 
 #include "console_commands/ConsoleCommandProcessor.h"
+#include "inbox/InboxFileReader.h"
 #include "inbox/InboxState.h"
-#include "inbox/ZeroInbox.h"
+#include "inbox/StartupInboxClear.h"
 #include "local_commands/LocalCommandProcessor.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 
 #include <Windows.h>
+
+#include <variant>
 
 namespace
 {
@@ -16,45 +19,7 @@ namespace
 	void SwallowFailSoftBoundary() noexcept {}
 
 	constexpr auto kPollInterval = 200ms;
-	constexpr std::size_t kMaxReadBytesPerPoll = std::size_t{ 64 } * 1024;
-
-	bool TryGetFileIdentity(HANDLE handle, Inbox::InboxFileIdentity& identity, DWORD& errorCode) noexcept
-	{
-		BY_HANDLE_FILE_INFORMATION info{};
-		if (!::GetFileInformationByHandle(handle, &info)) {
-			errorCode = ::GetLastError();
-			return false;
-		}
-
-		identity.volumeSerialNumber = info.dwVolumeSerialNumber;
-		identity.fileIndexHigh = info.nFileIndexHigh;
-		identity.fileIndexLow = info.nFileIndexLow;
-		errorCode = ERROR_SUCCESS;
-		return true;
-	}
-
-	class ScopedHandle
-	{
-	public:
-		explicit ScopedHandle(HANDLE handle) noexcept :
-			_handle(handle)
-		{}
-
-		~ScopedHandle() noexcept
-		{
-			if (_handle != INVALID_HANDLE_VALUE) {
-				::CloseHandle(_handle);
-			}
-		}
-
-		[[nodiscard]] HANDLE get() const noexcept
-		{
-			return _handle;
-		}
-
-	private:
-		HANDLE _handle{ INVALID_HANDLE_VALUE };
-	};
+	constexpr std::size_t kMaxNewBytesPerPoll = std::size_t{ 64 } * 1024;
 
 	std::wstring TrimWide(std::wstring value)
 	{
@@ -116,6 +81,8 @@ namespace
 			return "was truncated";
 		case Inbox::InboxResetReason::kReplaced:
 			return "was atomically replaced";
+		case Inbox::InboxResetReason::kOverwritten:
+			return "was overwritten";
 		case Inbox::InboxResetReason::kNone:
 		default:
 			return "";
@@ -169,7 +136,7 @@ namespace
 			try {
 				auto worker = std::jthread([this](const std::stop_token& stopToken) {
 					try {
-						if (!EstablishZeroInbox()) {
+						if (!EstablishInboxReadiness()) {
 							return;
 						}
 						PollLoop(stopToken);
@@ -190,12 +157,12 @@ namespace
 			}
 		}
 
-		[[nodiscard]] bool EstablishZeroInbox()
+		[[nodiscard]] bool EstablishInboxReadiness()
 		{
-			const auto result = Inbox::EstablishZeroInboxFile(_inboxPath);
-			const auto action = Inbox::DescribeZeroInboxResult(result);
+			const auto result = Inbox::ClearInboxAtStartup(_inboxPath);
+			const auto action = Inbox::DescribeStartupInboxClearResult(result);
 			if (!action.shouldProceed) {
-				return FailZeroInbox(action, result.errorCode);
+				return FailStartupInboxClear(action, result.errorCode);
 			}
 
 			ClearFileErrorState();
@@ -220,85 +187,113 @@ namespace
 
 		void PollInbox()
 		{
-			const auto handle = ScopedHandle(::CreateFileW(
-				_inboxPath.c_str(),
-				GENERIC_READ,
-				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-				nullptr,
-				OPEN_EXISTING,
-				FILE_ATTRIBUTE_NORMAL,
-				nullptr));
-
-			if (handle.get() == INVALID_HANDLE_VALUE) {
-				const auto error = ::GetLastError();
-				if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND) {
-					Inbox::InboxUpdateResult updateResult{};
-					{
-						std::scoped_lock lock(_stateLock);
-						updateResult = _inboxState.ObserveMissingFile();
-					}
-					LogInboxUpdate(updateResult);
-					ClearFileErrorState();
-					return;
-				}
-
-				ReportFileError("open", error);
+			const Inbox::InboxFileReader reader(_inboxPath);
+			auto opened = reader.Open();
+			if (std::holds_alternative<Inbox::InboxFileMissing>(opened)) {
+				HandleMissingInbox();
 				return;
 			}
 
-			LARGE_INTEGER fileSize{};
-			if (!::GetFileSizeEx(handle.get(), &fileSize)) {
-				ReportFileError("size", ::GetLastError());
+			if (const auto* error = std::get_if<Inbox::InboxFileError>(&opened)) {
+				ReportFileError(error->operation, error->code);
 				return;
 			}
 
-			Inbox::InboxFileIdentity identity{};
-			DWORD identityError = ERROR_SUCCESS;
-			if (!TryGetFileIdentity(handle.get(), identity, identityError)) {
-				ReportFileError("identity", identityError);
-				return;
-			}
-
+			auto& file = std::get<Inbox::InboxFile>(opened);
 			ClearFileErrorState();
+			const auto observeResult = ObserveInbox(file.Observation());
+			switch (observeResult.readMode) {
+			case Inbox::InboxReadMode::kNone:
+				return;
+			case Inbox::InboxReadMode::kAppendCandidate:
+				ReadAppend(reader, file, observeResult.readOffset);
+				return;
+			case Inbox::InboxReadMode::kRewrite:
+				ReadRewrite(reader, file);
+				return;
+			}
+		}
 
-			const auto size = static_cast<std::uint64_t>(fileSize.QuadPart);
+		void HandleMissingInbox()
+		{
+			Inbox::InboxUpdateResult updateResult{};
+			{
+				std::scoped_lock lock(_stateLock);
+				updateResult = _inboxState.ObserveMissingFile();
+			}
+			LogInboxUpdate(updateResult);
+			ClearFileErrorState();
+		}
+
+		Inbox::InboxUpdateResult ObserveInbox(const Inbox::FileObservation& observation)
+		{
 			Inbox::InboxUpdateResult observeResult{};
 			{
 				std::scoped_lock lock(_stateLock);
-				observeResult = _inboxState.ObserveFile(identity, size);
+				observeResult = _inboxState.ObserveFile(observation);
 			}
 			LogInboxUpdate(observeResult);
-			if (!observeResult.shouldRead) {
+			return observeResult;
+		}
+
+		void ReadAppend(const Inbox::InboxFileReader& reader, const Inbox::InboxFile& file, const std::uint64_t readOffset)
+		{
+			const auto size = file.Observation().size;
+			const auto bytesToRead = std::min<std::uint64_t>(size - readOffset, kMaxNewBytesPerPoll);
+			auto read = file.ReadAt(0, readOffset + bytesToRead);
+			if (const auto* error = std::get_if<Inbox::InboxFileError>(&read)) {
+				ReportFileError(error->operation, error->code);
 				return;
 			}
 
-			const auto bytesToRead = static_cast<DWORD>(std::min<std::uint64_t>(size - observeResult.readOffset, kMaxReadBytesPerPoll));
-			LARGE_INTEGER offset{};
-			offset.QuadPart = static_cast<LONGLONG>(observeResult.readOffset);
-			if (!::SetFilePointerEx(handle.get(), offset, nullptr, FILE_BEGIN)) {
-				ReportFileError("seek", ::GetLastError());
+			const auto& observedContents = std::get<std::string>(read);
+			if (static_cast<std::uint64_t>(observedContents.size()) != readOffset + bytesToRead) {
 				return;
 			}
-
-			std::string chunk(bytesToRead, '\0');
-			DWORD bytesRead = 0;
-			if (!::ReadFile(handle.get(), chunk.data(), bytesToRead, &bytesRead, nullptr)) {
-				ReportFileError("read", ::GetLastError());
-				return;
-			}
-
-			if (bytesRead == 0) {
-				return;
-			}
-
-			chunk.resize(bytesRead);
 
 			Inbox::InboxUpdateResult appendResult{};
 			{
 				std::scoped_lock lock(_stateLock);
-				appendResult = _inboxState.AppendChunk(chunk);
+				appendResult = _inboxState.AppendObservedContents(readOffset, observedContents);
 			}
 			LogInboxUpdate(appendResult);
+
+			if (appendResult.resetReason == Inbox::InboxResetReason::kOverwritten) {
+				ReadRewrite(reader, file);
+			}
+		}
+
+		void ReadRewrite(const Inbox::InboxFileReader& reader, const Inbox::InboxFile& file)
+		{
+			const auto beforeRead = file.Observation();
+			auto read = file.ReadAt(0, beforeRead.size);
+			if (const auto* error = std::get_if<Inbox::InboxFileError>(&read)) {
+				ReportFileError(error->operation, error->code);
+				return;
+			}
+
+			const auto& bytes = std::get<std::string>(read);
+			if (bytes.size() != beforeRead.size) {
+				return;
+			}
+
+			auto afterRead = reader.Open();
+			if (const auto* error = std::get_if<Inbox::InboxFileError>(&afterRead)) {
+				ReportFileError(error->operation, error->code);
+				return;
+			}
+
+			const auto* afterFile = std::get_if<Inbox::InboxFile>(&afterRead);
+			if (afterFile == nullptr || !(beforeRead == afterFile->Observation())) {
+				return;
+			}
+
+			Inbox::InboxUpdateResult rewriteResult{};
+			{
+				std::scoped_lock lock(_stateLock);
+				rewriteResult = _inboxState.AcceptRewriteContents(afterFile->Observation(), bytes);
+			}
+			LogInboxUpdate(rewriteResult);
 		}
 
 		void LogInboxUpdate(const Inbox::InboxUpdateResult& result)
@@ -453,7 +448,7 @@ namespace
 				FormatWindowsError(errorCode));
 		}
 
-		[[nodiscard]] bool FailZeroInbox(const Inbox::ZeroInboxAction& action, DWORD errorCode)
+		[[nodiscard]] bool FailStartupInboxClear(const Inbox::StartupInboxClearAction& action, DWORD errorCode)
 		{
 			ReportFileError(action.failedOperation, errorCode);
 			Logging::LogLocalActivityLine(action.localActivityLine);

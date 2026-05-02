@@ -22,7 +22,9 @@ description: Operate ConsoleLink in Skyrim VR. Use to find logs and inbox paths,
 - If startup logs report a different inbox path, treat the logged resolved path as the source of truth.
 - The inbox is a live transport, not a backlog.
 - On startup, ConsoleLink clears pre-existing inbox contents once.
-- Only later appended, newline-terminated lines are handled.
+- The inbox supports two write styles:
+  - Appends: each command as a newline-terminated line.
+  - Overwrites: the whole file as a complete command batch.
 
 ## Console commands
 

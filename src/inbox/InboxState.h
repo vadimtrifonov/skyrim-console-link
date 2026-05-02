@@ -1,5 +1,7 @@
 #pragma once
 
+#include "inbox/InboxFileObservation.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -9,26 +11,28 @@
 
 namespace Inbox
 {
-	struct InboxFileIdentity
-	{
-		std::uint32_t volumeSerialNumber = 0;
-		std::uint32_t fileIndexHigh = 0;
-		std::uint32_t fileIndexLow = 0;
-
-		[[nodiscard]] bool operator==(const InboxFileIdentity& other) const noexcept
-		{
-			return volumeSerialNumber == other.volumeSerialNumber &&
-			       fileIndexHigh == other.fileIndexHigh &&
-			       fileIndexLow == other.fileIndexLow;
-		}
-	};
-
 	enum class InboxResetReason
 	{
 		kNone,
 		kRemoved,
 		kTruncated,
-		kReplaced
+		kReplaced,
+		kOverwritten
+	};
+
+	enum class InboxReadMode
+	{
+		kNone,
+		kAppendCandidate,
+		kRewrite
+	};
+
+	enum class InboxTrackingState
+	{
+		kNotReady,
+		kReadyNoTrackedFile,
+		kTrackingAppend,
+		kRewritePending
 	};
 
 	struct InboxUpdateResult
@@ -40,8 +44,8 @@ namespace Inbox
 		std::size_t pendingFragmentBytes = 0;
 		std::size_t oversizedFragmentBytes = 0;
 		std::uint64_t readOffset = 0;
+		InboxReadMode readMode = InboxReadMode::kNone;
 		bool queueAtCapacity = false;
-		bool shouldRead = false;
 	};
 
 	struct PendingInputLine
@@ -63,8 +67,11 @@ namespace Inbox
 
 		void ResetForNewSession() noexcept;
 		[[nodiscard]] InboxUpdateResult ObserveMissingFile();
+		[[nodiscard]] InboxUpdateResult ObserveFile(const FileObservation& observation);
 		[[nodiscard]] InboxUpdateResult ObserveFile(const InboxFileIdentity& identity, std::uint64_t fileSize);
+		[[nodiscard]] InboxUpdateResult AppendObservedContents(std::uint64_t appendOffset, std::string_view observedContents);
 		[[nodiscard]] InboxUpdateResult AppendChunk(std::string_view chunk);
+		[[nodiscard]] InboxUpdateResult AcceptRewriteContents(const FileObservation& stableObservation, std::string_view contents);
 
 		[[nodiscard]] bool HasPendingLines() const noexcept;
 		[[nodiscard]] std::size_t PendingLineCount() const noexcept;
@@ -75,17 +82,19 @@ namespace Inbox
 
 	private:
 		[[nodiscard]] InboxUpdateResult ResetState(InboxResetReason reason, std::uint64_t baselineOffset);
+		[[nodiscard]] InboxUpdateResult EnterRewrite(InboxResetReason reason);
 		void ExtractCompleteLines(InboxUpdateResult& result);
 
 		std::size_t _maxPendingLines = 0;
 		std::size_t _maxPendingFragmentBytes = 0;
 		std::deque<PendingInputLine> _pendingLines;
 		std::string _pendingFragment;
+		std::string _acceptedContents;
 		InboxFileIdentity _fileIdentity{};
 		std::uint64_t _fileCursor = 0;
+		std::uint64_t _fileLastWriteTime = 0;
 		std::uint64_t _nextSequence = 1;
-		bool _fileIdentityKnown = false;
-		bool _baselineEstablished = false;
+		InboxTrackingState _trackingState = InboxTrackingState::kNotReady;
 	};
 
 	class WorkerStartState

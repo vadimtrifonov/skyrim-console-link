@@ -1,4 +1,4 @@
-#include "inbox/ZeroInbox.h"
+#include "inbox/StartupInboxClear.h"
 
 #include <Windows.h>
 
@@ -30,10 +30,10 @@ namespace
 
 namespace Inbox
 {
-	constexpr std::string_view kZeroInboxFailureLine =
+	constexpr std::string_view kStartupInboxClearFailureLine =
 		"inbox startup failed: could not clear existing inbox contents";
 
-	ZeroInboxResult EstablishZeroInboxFile(const std::filesystem::path& inboxPath) noexcept
+	StartupInboxClearResult ClearInboxAtStartup(const std::filesystem::path& inboxPath) noexcept
 	{
 		const auto handle = ScopedHandle(::CreateFileW(
 			inboxPath.c_str(),
@@ -45,59 +45,59 @@ namespace Inbox
 			nullptr));
 
 		if (handle.get() == INVALID_HANDLE_VALUE) {
-			return { ZeroInboxResultKind::kFailedOpenOrCreate, ::GetLastError() };
+			return { StartupInboxClearResultKind::kFailedOpenOrCreate, ::GetLastError() };
 		}
 
 		LARGE_INTEGER fileSize{};
 		if (!::GetFileSizeEx(handle.get(), &fileSize)) {
-			return { ZeroInboxResultKind::kFailedInspect, ::GetLastError() };
+			return { StartupInboxClearResultKind::kFailedInspect, ::GetLastError() };
 		}
 
 		if (fileSize.QuadPart != 0) {
 			LARGE_INTEGER zero{};
 			if (!::SetFilePointerEx(handle.get(), zero, nullptr, FILE_BEGIN)) {
-				return { ZeroInboxResultKind::kFailedClear, ::GetLastError() };
+				return { StartupInboxClearResultKind::kFailedClear, ::GetLastError() };
 			}
 
 			if (!::SetEndOfFile(handle.get())) {
-				return { ZeroInboxResultKind::kFailedClear, ::GetLastError() };
+				return { StartupInboxClearResultKind::kFailedClear, ::GetLastError() };
 			}
 		}
 
 		return {};
 	}
 
-	ZeroInboxAction DescribeZeroInboxResult(const ZeroInboxResult result) noexcept
+	StartupInboxClearAction DescribeStartupInboxClearResult(const StartupInboxClearResult result) noexcept
 	{
 		switch (result.kind) {
-		case ZeroInboxResultKind::kEstablished:
+		case StartupInboxClearResultKind::kEstablished:
 			return {
 				.shouldProceed = true,
 				.shouldResetState = true,
 				.localActivityLine = "inbox ready for new input",
 			};
-		case ZeroInboxResultKind::kFailedOpenOrCreate:
+		case StartupInboxClearResultKind::kFailedOpenOrCreate:
 			return {
-				.localActivityLine = kZeroInboxFailureLine,
-				.disableReason = kZeroInboxFailureLine,
+				.localActivityLine = kStartupInboxClearFailureLine,
+				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "open-or-create",
 			};
-		case ZeroInboxResultKind::kFailedInspect:
+		case StartupInboxClearResultKind::kFailedInspect:
 			return {
-				.localActivityLine = kZeroInboxFailureLine,
-				.disableReason = kZeroInboxFailureLine,
+				.localActivityLine = kStartupInboxClearFailureLine,
+				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "size",
 			};
-		case ZeroInboxResultKind::kFailedClear:
+		case StartupInboxClearResultKind::kFailedClear:
 			return {
-				.localActivityLine = kZeroInboxFailureLine,
-				.disableReason = kZeroInboxFailureLine,
+				.localActivityLine = kStartupInboxClearFailureLine,
+				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "clear",
 			};
 		default:
 			return {
-				.localActivityLine = kZeroInboxFailureLine,
-				.disableReason = kZeroInboxFailureLine,
+				.localActivityLine = kStartupInboxClearFailureLine,
+				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "unknown",
 			};
 		}

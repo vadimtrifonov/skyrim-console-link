@@ -1,36 +1,17 @@
 # inbox Specification
 
 ## Purpose
-Session-scoped inbox transport, startup clear, and routing of post-startup input lines.
+Session-scoped inbox transport, startup clear, runtime rewrite ingestion, and routing of accepted input lines.
 
 ## Requirements
-### Requirement: Inbox is a live transport
-The system MUST treat the inbox as a live transport, MUST clear existing inbox contents once at startup so that the inbox begins empty, MUST announce inbox readiness only after the inbox is known empty, and MUST accept only newline-terminated lines appended after that startup clear.
+### Requirement: Inbox startup clear establishes readiness
+The system MUST perform one startup inbox clear before processing inbox input, MUST announce inbox readiness only after the inbox is known empty, and MUST stop inbox processing for the session if the clear cannot establish an empty inbox.
 
 #### Scenario: Startup begins with pre-existing inbox content
 - **WHEN** ConsoleLink starts
 - **AND** the inbox already contains newline-terminated lines
-- **THEN** those pre-existing lines are removed by one inbox clear operation
-- **AND** only later appended lines are eligible for handling
-
-#### Scenario: Inbox file is rewritten during runtime
-- **WHEN** the watched inbox file is replaced, truncated, or removed and later recreated after startup inbox readiness is already established
-- **THEN** ConsoleLink discards buffered state from the earlier file contents
-- **AND** current contents in the rewritten or recreated inbox are treated as new live input rather than as stale startup backlog
-
-### Requirement: Inbox routes post-baseline lines by command class
-The system MUST route post-baseline `cdbg.` lines toward local-command handling and MUST route other post-baseline lines toward console-command handling.
-
-#### Scenario: Local command line is routed
-- **WHEN** a new post-baseline line starts with the `cdbg.` prefix
-- **THEN** ConsoleLink routes that line toward local-command handling
-
-#### Scenario: Non-local command line is routed
-- **WHEN** a new post-baseline line does not start with the `cdbg.` prefix
-- **THEN** ConsoleLink routes that line toward console-command handling
-
-### Requirement: Inbox session lifecycle is announced through local activity
-The system MUST announce inbox session resets through `[local]` activity.
+- **THEN** those pre-existing lines are removed by one startup inbox clear
+- **AND** only later input is eligible for handling
 
 #### Scenario: Inbox is ready for new input
 - **WHEN** ConsoleLink completes the startup inbox clear
@@ -41,3 +22,41 @@ The system MUST announce inbox session resets through `[local]` activity.
 - **WHEN** ConsoleLink cannot open, create, inspect, or clear the inbox file during startup
 - **THEN** it records a `[local]` failure stating inbox startup failed because it could not clear existing inbox contents
 - **AND** it stops inbox processing for that session
+
+### Requirement: Inbox accepts appended lines after readiness
+The system MUST accept only complete newline-terminated lines appended to the inbox after inbox readiness.
+
+#### Scenario: Line is appended after readiness
+- **WHEN** ConsoleLink has announced inbox readiness
+- **AND** a newline-terminated line is appended to the watched inbox file
+- **THEN** ConsoleLink accepts that line as live input
+
+### Requirement: Inbox accepts stable file rewrites after readiness
+After inbox readiness, the system MUST treat detected overwrites of the watched inbox file as whole-file input. It MUST wait for stable rewritten contents before accepting lines. It MUST accept non-empty lines from the stable file, including a final line without a trailing newline. It MUST discard unprocessed input from earlier file contents. It MUST NOT replay unchanged rewritten contents unless another rewrite occurs.
+
+#### Scenario: Inbox file is rewritten during runtime
+- **WHEN** the watched inbox file is replaced, truncated, removed and later recreated, or overwritten in place after inbox readiness
+- **THEN** ConsoleLink discards unprocessed input from the earlier file contents
+- **AND** it waits for stable rewritten contents
+- **AND** it accepts non-empty lines from the stable file, including a final line without a trailing newline
+
+#### Scenario: Same rewritten contents are polled again
+- **WHEN** ConsoleLink has already accepted lines from stable rewritten contents
+- **AND** later polls see the same unchanged contents without another rewrite
+- **THEN** ConsoleLink does not accept those lines again
+
+#### Scenario: Later rewrite produces the same text
+- **WHEN** a later rewrite occurs
+- **AND** its stable contents match an earlier rewrite
+- **THEN** ConsoleLink treats the later rewrite as new input
+
+### Requirement: Inbox routes accepted lines by command class
+The system MUST route each accepted inbox line to exactly one command processor.
+
+#### Scenario: Local command line is routed
+- **WHEN** an accepted inbox line starts with the `cdbg.` prefix
+- **THEN** ConsoleLink routes that line toward local-command handling
+
+#### Scenario: Non-local command line is routed
+- **WHEN** an accepted inbox line does not start with the `cdbg.` prefix
+- **THEN** ConsoleLink routes that line toward console-command handling

@@ -1,4 +1,4 @@
-#include "inbox/ZeroInbox.h"
+#include "inbox/StartupInboxClear.h"
 
 #include <filesystem>
 #include <fstream>
@@ -19,7 +19,7 @@ namespace
 	{
 		static std::uint32_t counter = 0;
 		auto path = std::filesystem::temp_directory_path();
-		path /= "ConsoleLink-zero-inbox-" + std::to_string(counter++) + ".txt";
+		path /= "ConsoleLink-startup-inbox-clear-" + std::to_string(counter++) + ".txt";
 		return path;
 	}
 
@@ -31,7 +31,7 @@ namespace
 
 	void TestSuccessActionResetsStateAndAnnouncesClear()
 	{
-		const auto action = Inbox::DescribeZeroInboxResult({});
+		const auto action = Inbox::DescribeStartupInboxClearResult({});
 		Expect(action.shouldProceed, "successful startup inbox clear should proceed");
 		Expect(action.shouldResetState, "successful startup inbox clear should reset inbox state");
 		Expect(action.localActivityLine == "inbox ready for new input", "successful startup inbox clear should announce readiness");
@@ -40,7 +40,7 @@ namespace
 
 	void TestFailureActionsDisableInboxProcessing()
 	{
-		const auto openFailure = Inbox::DescribeZeroInboxResult({ .kind = Inbox::ZeroInboxResultKind::kFailedOpenOrCreate,
+		const auto openFailure = Inbox::DescribeStartupInboxClearResult({ .kind = Inbox::StartupInboxClearResultKind::kFailedOpenOrCreate,
 			.errorCode = 5 });
 		Expect(!openFailure.shouldProceed, "open failure should stop startup inbox clear");
 		Expect(!openFailure.shouldResetState, "open failure should not reset inbox state");
@@ -52,41 +52,41 @@ namespace
 			"open failure should disable inbox processing");
 		Expect(openFailure.failedOperation == "open-or-create", "open failure should report the open-or-create operation");
 
-		const auto clearFailure = Inbox::DescribeZeroInboxResult({ .kind = Inbox::ZeroInboxResultKind::kFailedClear,
+		const auto clearFailure = Inbox::DescribeStartupInboxClearResult({ .kind = Inbox::StartupInboxClearResultKind::kFailedClear,
 			.errorCode = 5 });
 		Expect(clearFailure.failedOperation == "clear", "clear failure should report the clear operation");
 	}
 
-	void TestZeroInboxCreatesEmptyInboxWhenMissing()
+	void TestStartupInboxClearCreatesEmptyInboxWhenMissing()
 	{
 		const auto path = MakeTempInboxPath();
 		std::filesystem::remove(path);
 
-		const auto result = Inbox::EstablishZeroInboxFile(path);
-		Expect(result.kind == Inbox::ZeroInboxResultKind::kEstablished, "missing inbox should be created successfully");
+		const auto result = Inbox::ClearInboxAtStartup(path);
+		Expect(result.kind == Inbox::StartupInboxClearResultKind::kEstablished, "missing inbox should be created successfully");
 		Expect(std::filesystem::exists(path), "startup inbox clear should create the missing inbox file");
 		Expect(std::filesystem::file_size(path) == 0, "created inbox should be empty after startup inbox clear");
 
 		std::filesystem::remove(path);
 	}
 
-	void TestZeroInboxTruncatesExistingInbox()
+	void TestStartupInboxClearTruncatesExistingInbox()
 	{
 		const auto path = MakeTempInboxPath();
 		WriteFile(path, "stale\ncommands\n");
 
-		const auto result = Inbox::EstablishZeroInboxFile(path);
-		Expect(result.kind == Inbox::ZeroInboxResultKind::kEstablished, "existing inbox should be cleared successfully");
+		const auto result = Inbox::ClearInboxAtStartup(path);
+		Expect(result.kind == Inbox::StartupInboxClearResultKind::kEstablished, "existing inbox should be cleared successfully");
 		Expect(std::filesystem::file_size(path) == 0, "existing inbox should be empty after startup inbox clear");
 
 		std::filesystem::remove(path);
 	}
 }
 
-void RunZeroInboxTests()
+void RunStartupInboxClearTests()
 {
 	TestSuccessActionResetsStateAndAnnouncesClear();
 	TestFailureActionsDisableInboxProcessing();
-	TestZeroInboxCreatesEmptyInboxWhenMissing();
-	TestZeroInboxTruncatesExistingInbox();
+	TestStartupInboxClearCreatesEmptyInboxWhenMissing();
+	TestStartupInboxClearTruncatesExistingInbox();
 }
