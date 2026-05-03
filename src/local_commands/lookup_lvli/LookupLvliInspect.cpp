@@ -21,6 +21,9 @@ namespace LocalCommands
 			result.kind = LookupLvliResultKind::kWrongType;
 			result.wrongType.formID = form->GetFormID();
 			result.wrongType.formType = std::string(DescribeFormType(form->GetFormType()));
+			if (const auto* editorID = form->GetFormEditorID(); editorID != nullptr) {
+				result.wrongType.editorID = editorID;
+			}
 			if (const auto* file = form->GetFile(); file != nullptr) {
 				result.wrongType.source = std::string(file->GetFilename());
 			}
@@ -34,6 +37,9 @@ namespace LocalCommands
 
 		result.kind = LookupLvliResultKind::kHit;
 		result.hit.formID = form->GetFormID();
+		if (const auto* editorID = form->GetFormEditorID(); editorID != nullptr) {
+			result.hit.editorID = editorID;
+		}
 		if (const auto* file = form->GetFile(); file != nullptr) {
 			result.hit.source = std::string(file->GetFilename());
 		}

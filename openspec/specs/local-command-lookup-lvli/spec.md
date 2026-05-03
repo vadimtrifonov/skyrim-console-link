@@ -108,7 +108,7 @@ The system MUST emit enough metadata to identify the resolved leveled list and e
 #### Scenario: Lookup-lvli entry output includes editor ID when available
 
 - **WHEN** the emitted direct-entry form has an Editor ID
-- **THEN** that direct-entry line includes `editor="<EditorID>"`
+- **THEN** that direct-entry line includes `editorID="<EditorID>"`
 
 #### Scenario: Lookup-lvli entry output includes full name when available
 

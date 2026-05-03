@@ -27,6 +27,7 @@ namespace LocalCommands
 	struct LookupLvliHit
 	{
 		std::uint32_t formID = 0;
+		std::string editorID;
 		std::string source;
 		std::vector<LookupLvliEntry> entries;
 	};
@@ -35,6 +36,7 @@ namespace LocalCommands
 	{
 		std::uint32_t formID = 0;
 		std::string formType;
+		std::string editorID;
 		std::string source;
 	};
 

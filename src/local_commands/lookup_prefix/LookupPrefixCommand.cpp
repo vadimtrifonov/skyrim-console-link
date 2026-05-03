@@ -48,7 +48,7 @@ namespace
 
 	std::string FormatLookupMatchLine(const LocalCommands::LookupPrefixMatch& match)
 	{
-		std::string response = "lookup-prefix match editor=\"";
+		std::string response = "lookup-prefix match editorID=\"";
 		response += match.editorID;
 		response += "\" form=";
 		response += FormatFormID(match.formID);

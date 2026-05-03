@@ -12,12 +12,18 @@ namespace
 	std::string BuildLookupLvliWrongTypeLine(
 		std::string_view commandLabel,
 		std::string_view target,
-		const LocalCommands::LookupLvliWrongType& wrongType)
+		const LocalCommands::LookupLvliWrongType& wrongType,
+		bool includeResolvedEditorID)
 	{
 		std::string response =
 			std::string(commandLabel) + " \"" + std::string(target) + "\" -> wrong-type form=" + FormatFormID(wrongType.formID);
 		response += " type=";
 		response += wrongType.formType;
+		if (includeResolvedEditorID) {
+			response += " editorID=\"";
+			response += wrongType.editorID;
+			response += "\"";
+		}
 		response += " source=\"";
 		response += wrongType.source;
 		response += "\"";
@@ -27,10 +33,16 @@ namespace
 	std::string BuildLookupLvliHitLine(
 		std::string_view commandLabel,
 		std::string_view target,
-		const LocalCommands::LookupLvliHit& hit)
+		const LocalCommands::LookupLvliHit& hit,
+		bool includeResolvedEditorID)
 	{
 		std::string response =
 			std::string(commandLabel) + " \"" + std::string(target) + "\" -> hit form=" + FormatFormID(hit.formID);
+		if (includeResolvedEditorID) {
+			response += " editorID=\"";
+			response += hit.editorID;
+			response += "\"";
+		}
 		response += " entries=";
 		response += std::to_string(hit.entries.size());
 		response += " source=\"";
@@ -53,7 +65,7 @@ namespace
 		response += entry.formType;
 
 		if (!entry.editorID.empty()) {
-			response += " editor=\"";
+			response += " editorID=\"";
 			response += entry.editorID;
 			response += "\"";
 		}
@@ -77,7 +89,8 @@ namespace LocalCommands
 		std::string_view commandLabel,
 		std::string_view target,
 		std::size_t limit,
-		const LookupLvliResult& result)
+		const LookupLvliResult& result,
+		bool includeResolvedEditorID)
 	{
 		std::vector<std::string> responseLines;
 		switch (result.kind) {
@@ -85,7 +98,7 @@ namespace LocalCommands
 			responseLines.push_back(std::string(commandLabel) + " \"" + std::string(target) + "\" -> miss");
 			return responseLines;
 		case LookupLvliResultKind::kWrongType:
-			responseLines.push_back(BuildLookupLvliWrongTypeLine(commandLabel, target, result.wrongType));
+			responseLines.push_back(BuildLookupLvliWrongTypeLine(commandLabel, target, result.wrongType, includeResolvedEditorID));
 			return responseLines;
 		case LookupLvliResultKind::kHit:
 			break;
@@ -95,7 +108,7 @@ namespace LocalCommands
 
 		const auto emittedCount = std::min(limit, result.hit.entries.size());
 		responseLines.reserve(emittedCount + 2);
-		responseLines.push_back(BuildLookupLvliHitLine(commandLabel, target, result.hit));
+		responseLines.push_back(BuildLookupLvliHitLine(commandLabel, target, result.hit, includeResolvedEditorID));
 
 		for (std::size_t index = 0; index < emittedCount; ++index) {
 			responseLines.push_back(FormatLookupLvliEntryLine(commandLabel, result.hit.entries[index]));

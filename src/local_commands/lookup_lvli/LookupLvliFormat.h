@@ -13,5 +13,6 @@ namespace LocalCommands
 		std::string_view commandLabel,
 		std::string_view target,
 		std::size_t limit,
-		const LookupLvliResult& result);
+		const LookupLvliResult& result,
+		bool includeResolvedEditorID);
 }

@@ -77,7 +77,12 @@ namespace LocalCommands
 		}
 
 		const auto* form = LookupFormByFormKey(*parsedKey, *dataHandler);
-		return FormatLookupLvliResponse(kLookupLvliFormCommandLabel, parsed->formKey, parsed->limit, InspectLookupLvliForm(form));
+		return FormatLookupLvliResponse(
+			kLookupLvliFormCommandLabel,
+			parsed->formKey,
+			parsed->limit,
+			InspectLookupLvliForm(form),
+			true);
 	}
 
 	std::vector<std::string> ExecuteLookupLvliFormCommand(
@@ -89,6 +94,6 @@ namespace LocalCommands
 			return { "usage: cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]" };
 		}
 
-		return FormatLookupLvliResponse(kLookupLvliFormCommandLabel, parsed->formKey, parsed->limit, result);
+		return FormatLookupLvliResponse(kLookupLvliFormCommandLabel, parsed->formKey, parsed->limit, result, true);
 	}
 }

@@ -21,3 +21,7 @@ artifacts/
 
 # git worktrees
 .worktrees/
+
+#openspec
+.agents/skills/openspec-*
+openspec/schemas/

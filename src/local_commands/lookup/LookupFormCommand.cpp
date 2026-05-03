@@ -34,11 +34,9 @@ namespace
 		response += " type=";
 		response += hit.formType;
 
-		if (!hit.editorID.empty()) {
-			response += " editor=\"";
-			response += hit.editorID;
-			response += "\"";
-		}
+		response += " editorID=\"";
+		response += hit.editorID;
+		response += "\"";
 
 		if (!hit.name.empty()) {
 			response += " name=\"";

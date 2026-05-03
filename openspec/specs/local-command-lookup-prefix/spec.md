@@ -58,7 +58,8 @@ The system MUST order prefix lookup matches by Editor ID, MUST emit at most the 
 #### Scenario: Prefix lookup match output includes the source plugin
 
 - **WHEN** the prefix lookup emits a match line
-- **THEN** that line includes `source="<plugin>"`
+- **THEN** that line includes `editorID="<EditorID>"`
+- **AND** that line includes `source="<plugin>"`
 - **AND** that value is the source plugin filename for the matched form
 
 #### Scenario: Prefix lookup reports truncation

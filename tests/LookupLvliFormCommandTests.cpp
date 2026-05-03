@@ -25,6 +25,7 @@ namespace
 		result.kind = LookupLvliResultKind::kHit;
 		result.hit = LookupLvliHit{
 			.formID = 0x0003DF19,
+			.editorID = "LItemBanditArmorHeavy",
 			.source = "Skyrim.esm",
 			.entries = std::move(entries),
 		};
@@ -90,8 +91,8 @@ namespace
 		Expect(response.size() == 1, "wrong type should return one response line");
 		Expect(
 			response.front() ==
-				"lookup-lvli-form \"Skyrim.esm|00012E49\" -> wrong-type form=0x00012E49 type=ARMO source=\"Skyrim.esm\"",
-			"wrong type should include form, type, and source");
+				"lookup-lvli-form \"Skyrim.esm|00012E49\" -> wrong-type form=0x00012E49 type=ARMO editorID=\"\" source=\"Skyrim.esm\"",
+			"wrong type should include form, type, editor ID, and source");
 	}
 
 	void TestLookupLvliFormUsesDefaultLimitAndPreservesEntryOrder()
@@ -115,19 +116,19 @@ namespace
 			MakeHitResult(std::move(entries)));
 		Expect(result.size() == 12, "default limit should emit summary, ten entries, and truncation");
 		Expect(
-			result[0] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 entries=12 source=\"Skyrim.esm\"",
-			"summary should include form, total entry count, and source");
+			result[0] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 editorID=\"LItemBanditArmorHeavy\" entries=12 source=\"Skyrim.esm\"",
+			"summary should include form, editor ID, total entry count, and source");
 		Expect(
 			result[1] ==
-				"lookup-lvli-form entry level=1 count=1 form=0x02000010 type=ARMO editor=\"ArmorEntry1\" name=\"Armor Name 1\" source=\"Skyrim.esm\"",
+				"lookup-lvli-form entry level=1 count=1 form=0x02000010 type=ARMO editorID=\"ArmorEntry1\" name=\"Armor Name 1\" source=\"Skyrim.esm\"",
 			"default limit should emit the first direct entry in order");
 		Expect(
 			result[2] ==
-				"lookup-lvli-form entry level=2 count=2 form=0x02000011 type=LVLI editor=\"NestedArmorList\" name=\"Nested Armor List\" source=\"Sentinel.esp\"",
+				"lookup-lvli-form entry level=2 count=2 form=0x02000011 type=LVLI editorID=\"NestedArmorList\" name=\"Nested Armor List\" source=\"Sentinel.esp\"",
 			"nested LVLI references should appear as one direct entry line");
 		Expect(
 			result[10] ==
-				"lookup-lvli-form entry level=10 count=1 form=0x02000019 type=ARMO editor=\"ArmorEntry10\" name=\"Armor Name 10\" source=\"Sentinel.esp\"",
+				"lookup-lvli-form entry level=10 count=1 form=0x02000019 type=ARMO editorID=\"ArmorEntry10\" name=\"Armor Name 10\" source=\"Sentinel.esp\"",
 			"default limit should preserve entry order up to the built-in limit");
 		Expect(
 			result[11] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> truncated to 10 of 12 entries",
@@ -170,15 +171,15 @@ namespace
 
 		Expect(response.size() == 4, "explicit limit should emit summary, limited entries, and truncation");
 		Expect(
-			response[0] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 entries=3 source=\"Skyrim.esm\"",
+			response[0] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 editorID=\"LItemBanditArmorHeavy\" entries=3 source=\"Skyrim.esm\"",
 			"explicit limit should keep the full summary count");
 		Expect(
 			response[1] ==
-				"lookup-lvli-form entry level=4 count=1 form=0x02000020 type=ARMO editor=\"ArmorIronCuirass\" name=\"Iron Armor\" source=\"Skyrim.esm\"",
+				"lookup-lvli-form entry level=4 count=1 form=0x02000020 type=ARMO editorID=\"ArmorIronCuirass\" name=\"Iron Armor\" source=\"Skyrim.esm\"",
 			"explicit limit should emit the first entry");
 		Expect(
 			response[2] ==
-				"lookup-lvli-form entry level=6 count=2 form=0x02000021 type=LVLI editor=\"NestedBanditArmorList\" name=\"Nested Bandit Armor\" source=\"Sentinel.esp\"",
+				"lookup-lvli-form entry level=6 count=2 form=0x02000021 type=LVLI editorID=\"NestedBanditArmorList\" name=\"Nested Bandit Armor\" source=\"Sentinel.esp\"",
 			"explicit limit should emit the second entry");
 		Expect(
 			response[3] == "lookup-lvli-form \"Skyrim.esm|0003DF19\" -> truncated to 2 of 3 entries",
@@ -221,7 +222,7 @@ namespace
 
 		Expect(response.size() == 4, "space-containing plugin filename with explicit limit should be accepted");
 		Expect(
-			response[0] == "lookup-lvli-form \"RoleRim - Loot.esp|00037C19\" -> hit form=0x0003DF19 entries=3 source=\"Skyrim.esm\"",
+			response[0] == "lookup-lvli-form \"RoleRim - Loot.esp|00037C19\" -> hit form=0x0003DF19 editorID=\"LItemBanditArmorHeavy\" entries=3 source=\"Skyrim.esm\"",
 			"space-containing plugin filename should keep the full form key in the summary");
 		Expect(
 			response[3] == "lookup-lvli-form \"RoleRim - Loot.esp|00037C19\" -> truncated to 2 of 3 entries",

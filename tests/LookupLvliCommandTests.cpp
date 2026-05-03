@@ -100,15 +100,15 @@ namespace
 			"summary should include form, total entry count, and source");
 		Expect(
 			result[1] ==
-				"lookup-lvli entry level=1 count=1 form=0x02000010 type=ARMO editor=\"ArmorEntry1\" name=\"Armor Name 1\" source=\"Skyrim.esm\"",
+				"lookup-lvli entry level=1 count=1 form=0x02000010 type=ARMO editorID=\"ArmorEntry1\" name=\"Armor Name 1\" source=\"Skyrim.esm\"",
 			"default limit should emit the first direct entry in order");
 		Expect(
 			result[2] ==
-				"lookup-lvli entry level=2 count=2 form=0x02000011 type=LVLI editor=\"NestedArmorList\" name=\"Nested Armor List\" source=\"Sentinel.esp\"",
+				"lookup-lvli entry level=2 count=2 form=0x02000011 type=LVLI editorID=\"NestedArmorList\" name=\"Nested Armor List\" source=\"Sentinel.esp\"",
 			"nested LVLI references should appear as one direct entry line");
 		Expect(
 			result[10] ==
-				"lookup-lvli entry level=10 count=1 form=0x02000019 type=ARMO editor=\"ArmorEntry10\" name=\"Armor Name 10\" source=\"Sentinel.esp\"",
+				"lookup-lvli entry level=10 count=1 form=0x02000019 type=ARMO editorID=\"ArmorEntry10\" name=\"Armor Name 10\" source=\"Sentinel.esp\"",
 			"default limit should preserve entry order up to the built-in limit");
 		Expect(
 			result[11] == "lookup-lvli \"BanditArmorList\" -> truncated to 10 of 12 entries",
@@ -155,11 +155,11 @@ namespace
 			"explicit limit should keep the full summary count");
 		Expect(
 			response[1] ==
-				"lookup-lvli entry level=4 count=1 form=0x02000020 type=ARMO editor=\"ArmorIronCuirass\" name=\"Iron Armor\" source=\"Skyrim.esm\"",
+				"lookup-lvli entry level=4 count=1 form=0x02000020 type=ARMO editorID=\"ArmorIronCuirass\" name=\"Iron Armor\" source=\"Skyrim.esm\"",
 			"explicit limit should emit the first entry");
 		Expect(
 			response[2] ==
-				"lookup-lvli entry level=6 count=2 form=0x02000021 type=LVLI editor=\"NestedBanditArmorList\" name=\"Nested Bandit Armor\" source=\"Sentinel.esp\"",
+				"lookup-lvli entry level=6 count=2 form=0x02000021 type=LVLI editorID=\"NestedBanditArmorList\" name=\"Nested Bandit Armor\" source=\"Sentinel.esp\"",
 			"explicit limit should emit the second entry");
 		Expect(
 			response[3] == "lookup-lvli \"BanditArmorList\" -> truncated to 2 of 3 entries",

@@ -52,15 +52,15 @@ namespace
 		Expect(result[0] == "lookup-prefix \"Armor\" -> 3 match(es)", "prefix lookup should emit match count summary");
 		Expect(
 			result[1] ==
-				"lookup-prefix match editor=\"ArmorIronBoots\" form=0x00012E4F type=ARMO name=\"Iron Boots\" source=\"Sentinel.esp\"",
+				"lookup-prefix match editorID=\"ArmorIronBoots\" form=0x00012E4F type=ARMO name=\"Iron Boots\" source=\"Sentinel.esp\"",
 			"prefix lookup should order the first emitted match by editor ID");
 		Expect(
 			result[2] ==
-				"lookup-prefix match editor=\"ArmorIronCuirass\" form=0x00012E49 type=ARMO name=\"Iron Armor\" source=\"Sentinel - Master Plugin.esp\"",
+				"lookup-prefix match editorID=\"ArmorIronCuirass\" form=0x00012E49 type=ARMO name=\"Iron Armor\" source=\"Sentinel - Master Plugin.esp\"",
 			"prefix lookup should order the second emitted match by editor ID");
 		Expect(
 			result[3] ==
-				"lookup-prefix match editor=\"ArmorSteelBoots\" form=0x00013962 type=ARMO name=\"Steel Boots\" source=\"Skyrim.esm\"",
+				"lookup-prefix match editorID=\"ArmorSteelBoots\" form=0x00013962 type=ARMO name=\"Steel Boots\" source=\"Skyrim.esm\"",
 			"prefix lookup should order the final emitted match by editor ID");
 	}
 
@@ -72,11 +72,11 @@ namespace
 		Expect(result[0] == "lookup-prefix \"Armor\" -> 3 match(es)", "explicit limit should keep full match summary");
 		Expect(
 			result[1] ==
-				"lookup-prefix match editor=\"ArmorIronBoots\" form=0x00012E4F type=ARMO name=\"Iron Boots\" source=\"Sentinel.esp\"",
+				"lookup-prefix match editorID=\"ArmorIronBoots\" form=0x00012E4F type=ARMO name=\"Iron Boots\" source=\"Sentinel.esp\"",
 			"explicit limit should emit the first ordered match");
 		Expect(
 			result[2] ==
-				"lookup-prefix match editor=\"ArmorIronCuirass\" form=0x00012E49 type=ARMO name=\"Iron Armor\" source=\"Sentinel - Master Plugin.esp\"",
+				"lookup-prefix match editorID=\"ArmorIronCuirass\" form=0x00012E49 type=ARMO name=\"Iron Armor\" source=\"Sentinel - Master Plugin.esp\"",
 			"explicit limit should emit the second ordered match");
 		Expect(
 			result[3] == "lookup-prefix \"Armor\" -> truncated to 2 of 3 match(es)",

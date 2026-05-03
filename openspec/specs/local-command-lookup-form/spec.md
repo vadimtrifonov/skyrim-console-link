@@ -52,6 +52,7 @@ The system MUST report a missing exact form separately from a resolved form.
 - **THEN** the plugin emits a hit response line for that form
 - **AND** that line includes `form=0x...`
 - **AND** that line includes `type=<TYPE>`
+- **AND** that line includes `editorID="..."`
 - **AND** that line includes `source="<plugin>"`
 
 ### Requirement: Lookup-form uses plugin-qualified local form IDs
@@ -71,7 +72,7 @@ The system MUST emit enough metadata to identify the resolved form and SHOULD in
 #### Scenario: Lookup-form hit output includes Editor ID when available
 
 - **WHEN** the exact form resolves and has an Editor ID
-- **THEN** the hit response line includes `editor="<EditorID>"`
+- **THEN** the hit response line includes `editorID="<EditorID>"`
 
 #### Scenario: Lookup-form hit output includes full name when available
 

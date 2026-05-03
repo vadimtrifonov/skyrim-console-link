@@ -57,6 +57,7 @@ The system MUST report a missing exact form separately from a resolved non-`LVLI
 - **THEN** the plugin emits a wrong-type response line for that form
 - **AND** that line includes `form=0x...`
 - **AND** that line includes `type=<TYPE>`
+- **AND** that line includes `editorID="..."`
 - **AND** that line includes `source="<plugin>"`
 
 ### Requirement: Lookup-lvli-form uses plugin-qualified local form IDs
@@ -108,6 +109,7 @@ The system MUST emit enough metadata to identify the resolved leveled list and e
 
 - **WHEN** the exact plugin-qualified local form ID resolves a leveled list
 - **THEN** the summary response line includes `form=0x...`
+- **AND** that line includes `editorID="..."`
 - **AND** that line includes `entries=<count>`
 - **AND** that line includes `source="<plugin>"`
 
@@ -123,7 +125,7 @@ The system MUST emit enough metadata to identify the resolved leveled list and e
 #### Scenario: Lookup-lvli-form entry output includes editor ID when available
 
 - **WHEN** the emitted direct-entry form has an Editor ID
-- **THEN** that direct-entry line includes `editor="<EditorID>"`
+- **THEN** that direct-entry line includes `editorID="<EditorID>"`
 
 #### Scenario: Lookup-lvli-form entry output includes full name when available
 

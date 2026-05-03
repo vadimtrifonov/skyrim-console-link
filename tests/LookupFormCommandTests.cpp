@@ -54,7 +54,7 @@ namespace
 		Expect(result.size() == 1, "hit should return one response line");
 		Expect(
 			result.front() ==
-				"lookup-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 type=LVLI editor=\"LItemBanditArmorHeavy\" name=\"Bandit Heavy Armor\" source=\"Skyrim.esm\"",
+				"lookup-form \"Skyrim.esm|0003DF19\" -> hit form=0x0003DF19 type=LVLI editorID=\"LItemBanditArmorHeavy\" name=\"Bandit Heavy Armor\" source=\"Skyrim.esm\"",
 			"hit should include form, type, editor ID, name, and source");
 	}
 
@@ -72,7 +72,7 @@ namespace
 		Expect(result.size() == 1, "space-containing plugin filename should still return one response line");
 		Expect(
 			result.front() ==
-				"lookup-form \"Sentinel - Master Plugin.esp|0003DF19\" -> hit form=0x0103DF19 type=LVLI editor=\"LItemBanditArmorHeavy\" name=\"Bandit Heavy Armor\" source=\"Sentinel - Master Plugin.esp\"",
+				"lookup-form \"Sentinel - Master Plugin.esp|0003DF19\" -> hit form=0x0103DF19 type=LVLI editorID=\"LItemBanditArmorHeavy\" name=\"Bandit Heavy Armor\" source=\"Sentinel - Master Plugin.esp\"",
 			"space-containing plugin filename should be accepted without quoting");
 	}
 
@@ -88,8 +88,8 @@ namespace
 		Expect(result.size() == 1, "hit should return one response line");
 		Expect(
 			result.front() ==
-				"lookup-form \"Sentinel.esp|00000ABC\" -> hit form=0x02000ABC type=ARMO source=\"Sentinel.esp\"",
-			"hit should omit editor ID and name when unavailable");
+				"lookup-form \"Sentinel.esp|00000ABC\" -> hit form=0x02000ABC type=ARMO editorID=\"\" source=\"Sentinel.esp\"",
+			"hit should render an empty editor ID explicitly and omit name when unavailable");
 	}
 }
 

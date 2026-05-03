@@ -56,7 +56,12 @@ namespace LocalCommands
 		}
 
 		const auto* form = RE::TESForm::LookupByEditorID(parsed->editorID);
-		return FormatLookupLvliResponse(kLookupLvliCommandLabel, parsed->editorID, parsed->limit, InspectLookupLvliForm(form));
+		return FormatLookupLvliResponse(
+			kLookupLvliCommandLabel,
+			parsed->editorID,
+			parsed->limit,
+			InspectLookupLvliForm(form),
+			false);
 	}
 
 	std::vector<std::string> ExecuteLookupLvliCommand(
@@ -68,6 +73,6 @@ namespace LocalCommands
 			return { "usage: cdbg.lookup-lvli <EditorID> [limit]" };
 		}
 
-		return FormatLookupLvliResponse(kLookupLvliCommandLabel, parsed->editorID, parsed->limit, result);
+		return FormatLookupLvliResponse(kLookupLvliCommandLabel, parsed->editorID, parsed->limit, result, false);
 	}
 }
