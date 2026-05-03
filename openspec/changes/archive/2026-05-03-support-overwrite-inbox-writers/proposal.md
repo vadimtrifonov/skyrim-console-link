@@ -34,13 +34,13 @@ Use these terms in specs and touched code/tests:
 
 - Rename startup-clear code to match the lifecycle term.
    - `ZeroInbox.*` -> `StartupInboxClear.*`
-   - `EstablishZeroInboxFile` -> `ClearInboxAtStartup`
-   - `DescribeZeroInboxResult` -> `DescribeStartupInboxClearResult`
+   - `EstablishZeroInboxFile` -> `ClearAtStartup`
+   - `DescribeZeroInboxResult` -> `DescribeStartupClearResult`
    - `InputProcessor::EstablishZeroInbox` -> `EstablishInboxReadiness`
 
-- `InboxFileReader` owns inbox file open, observe, and range-read I/O.
+- `FileReader` owns inbox file open, observe, and range-read I/O.
 
-- `FileObservation`: identity, size, last-write time for an existing inbox file. `InboxState` uses it to choose append vs rewrite and to compare the inbox path before and after reading a rewrite.
+- `FileObservation`: identity, size, last-write time for an existing inbox file. `State` uses it to choose append vs rewrite and to compare the inbox path before and after reading a rewrite.
 
 - Enter rewrite mode when the append cursor no longer describes the file: identity changed, size is below the cursor, or the file reappeared after being missing. Discard buffered and queued input from the previous file contents, then read from offset `0`.
 

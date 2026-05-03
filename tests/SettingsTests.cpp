@@ -145,7 +145,7 @@ namespace
 	{
 		const std::filesystem::path configured = L"ConsoleLink.inbox.txt";
 		const auto logDirectory = std::filesystem::temp_directory_path() / "ConsoleLink-log-root";
-		const auto result = Inbox::ResolveInboxPath(Inbox::InboxPathContext{
+		const auto result = Inbox::ResolvePath(Inbox::PathContext{
 			.configuredPath = configured,
 			.logDirectory = logDirectory });
 

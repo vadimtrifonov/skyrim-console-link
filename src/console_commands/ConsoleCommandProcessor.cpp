@@ -11,26 +11,26 @@
 
 namespace
 {
-	enum class ConsoleCommandReadinessState
+	enum class ReadinessState
 	{
 		kReady,
 		kNotReady,
 		kUnavailable
 	};
 
-	struct ConsoleCommandState
+	struct State
 	{
-		ConsoleCommandReadinessState readiness = ConsoleCommandReadinessState::kNotReady;
+		ReadinessState readiness = ReadinessState::kNotReady;
 		bool initialized = false;
 	};
 
-	ConsoleCommandState& GetState()
+	State& GetState()
 	{
-		static ConsoleCommandState state;
+		static State state;
 		return state;
 	}
 
-	void UpdateReadiness(const ConsoleCommandReadinessState readiness) noexcept
+	void UpdateReadiness(const ReadinessState readiness) noexcept
 	{
 		auto& state = GetState();
 		if (state.readiness == readiness) {
@@ -39,27 +39,27 @@ namespace
 
 		state.readiness = readiness;
 		switch (readiness) {
-		case ConsoleCommandReadinessState::kReady:
+		case ReadinessState::kReady:
 			Logging::LogLocalActivityLine("console commands are ready");
 			break;
-		case ConsoleCommandReadinessState::kNotReady:
+		case ReadinessState::kNotReady:
 			Logging::LogLocalActivityLine("console commands are not ready");
 			break;
-		case ConsoleCommandReadinessState::kUnavailable:
+		case ReadinessState::kUnavailable:
 		default:
 			Logging::LogLocalActivityLine("console commands are unavailable");
 			break;
 		}
 	}
 
-	void OnConsoleMenuStateChange(const bool isOpen) noexcept
+	void OnMenuStateChange(const bool isOpen) noexcept
 	{
 		auto& state = GetState();
-		if (!state.initialized || state.readiness == ConsoleCommandReadinessState::kUnavailable) {
+		if (!state.initialized || state.readiness == ReadinessState::kUnavailable) {
 			return;
 		}
 
-		UpdateReadiness(isOpen ? ConsoleCommandReadinessState::kReady : ConsoleCommandReadinessState::kNotReady);
+		UpdateReadiness(isOpen ? ReadinessState::kReady : ReadinessState::kNotReady);
 	}
 }
 
@@ -75,20 +75,20 @@ namespace ConsoleCommands
 		state.initialized = true;
 		if (!REL::Module::IsVR()) {
 			logs::warn("Skipping console command submission seam validation: the ExecuteCommand seam is VR-only");
-			state.readiness = ConsoleCommandReadinessState::kUnavailable;
+			state.readiness = ReadinessState::kUnavailable;
 			return;
 		}
 
 		if (!Console::ExecuteCommandSeam::Validate()) {
-			state.readiness = ConsoleCommandReadinessState::kUnavailable;
+			state.readiness = ReadinessState::kUnavailable;
 			return;
 		}
 
-		Console::MenuState::SetStateChangeHandler(&::OnConsoleMenuStateChange);
+		Console::MenuState::SetStateChangeHandler(&::OnMenuStateChange);
 		UpdateReadiness(
 			Console::MenuState::IsConsoleMenuOpen() ?
-				ConsoleCommandReadinessState::kReady :
-				ConsoleCommandReadinessState::kNotReady);
+				ReadinessState::kReady :
+				ReadinessState::kNotReady);
 	}
 
 	ProcessResult Process(std::string_view line) noexcept
@@ -99,7 +99,7 @@ namespace ConsoleCommands
 				return ProcessResult::kRejected;
 			}
 
-			if (GetState().readiness == ConsoleCommandReadinessState::kUnavailable) {
+			if (GetState().readiness == ReadinessState::kUnavailable) {
 				Logging::LogLocalActivityLine("console commands are unavailable");
 				return ProcessResult::kRejected;
 			}
@@ -135,15 +135,15 @@ namespace ConsoleCommands
 			RE::FxDelegateArgs delegateArgs(RE::GFxValue{}, console.get(), movie.get(), args.data(), static_cast<std::uint32_t>(args.size()));
 			if (Console::ExecuteCommandSeam::Invoke(delegateArgs) != Console::ExecuteCommandSeam::InvokeResult::kInvoked) {
 				logs::warn("Disabling console command submission after failure: ExecuteCommand seam invocation failed");
-				UpdateReadiness(ConsoleCommandReadinessState::kUnavailable);
+				UpdateReadiness(ReadinessState::kUnavailable);
 				return ProcessResult::kRejected;
 			}
 
-			if (GetState().readiness != ConsoleCommandReadinessState::kReady) {
+			if (GetState().readiness != ReadinessState::kReady) {
 				logs::warn("Console command submission succeeded without processor being ready; the readiness state was stale");
 			}
 
-			UpdateReadiness(ConsoleCommandReadinessState::kReady);
+			UpdateReadiness(ReadinessState::kReady);
 			Logging::LogConsoleSubmitLine(line);
 			return ProcessResult::kHandled;
 		} catch (const std::exception& exception) {
@@ -152,7 +152,7 @@ namespace ConsoleCommands
 			logs::warn("Console command processor failed: unknown exception");
 		}
 
-		UpdateReadiness(ConsoleCommandReadinessState::kUnavailable);
+		UpdateReadiness(ReadinessState::kUnavailable);
 		return ProcessResult::kRejected;
 	}
 }

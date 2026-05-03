@@ -14,69 +14,69 @@ namespace
 
 namespace Inbox
 {
-	InboxState::InboxState(const InboxStateLimits limits) :
+	State::State(const StateLimits limits) :
 		_maxPendingLines(limits.maxPendingLines),
 		_maxPendingFragmentBytes(limits.maxPendingFragmentBytes)
 	{}
 
-	void InboxState::ResetForNewSession() noexcept
+	void State::ResetForNewSession() noexcept
 	{
 		_pendingLines.clear();
 		_pendingFragment.clear();
 		_acceptedContents.clear();
 		_fileCursor = 0;
 		_fileLastWriteTime = 0;
-		_trackingState = InboxTrackingState::kReadyNoTrackedFile;
+		_trackingState = TrackingState::kReadyNoTrackedFile;
 	}
 
-	InboxUpdateResult InboxState::ObserveMissingFile()
+	UpdateResult State::ObserveMissingFile()
 	{
 		switch (_trackingState) {
-		case InboxTrackingState::kReadyNoTrackedFile:
-			return EnterRewrite(InboxResetReason::kNone);
-		case InboxTrackingState::kTrackingAppend:
-			return EnterRewrite(InboxResetReason::kRemoved);
-		case InboxTrackingState::kNotReady:
-		case InboxTrackingState::kRewritePending:
+		case TrackingState::kReadyNoTrackedFile:
+			return EnterRewrite(ResetReason::kNone);
+		case TrackingState::kTrackingAppend:
+			return EnterRewrite(ResetReason::kRemoved);
+		case TrackingState::kNotReady:
+		case TrackingState::kRewritePending:
 			return {};
 		}
 
 		return {};
 	}
 
-	InboxUpdateResult InboxState::ObserveFile(const FileObservation& observation)
+	UpdateResult State::ObserveFile(const FileObservation& observation)
 	{
-		InboxUpdateResult result{};
+		UpdateResult result{};
 
 		switch (_trackingState) {
-		case InboxTrackingState::kNotReady:
+		case TrackingState::kNotReady:
 			return result;
 
-		case InboxTrackingState::kReadyNoTrackedFile:
+		case TrackingState::kReadyNoTrackedFile:
 			_fileIdentity = observation.identity;
 			_fileLastWriteTime = observation.lastWriteTime;
-			_trackingState = InboxTrackingState::kTrackingAppend;
+			_trackingState = TrackingState::kTrackingAppend;
 			break;
 
-		case InboxTrackingState::kRewritePending:
+		case TrackingState::kRewritePending:
 			_fileIdentity = observation.identity;
 			result.readOffset = 0;
-			result.readMode = observation.size > 0 ? InboxReadMode::kRewrite : InboxReadMode::kNone;
+			result.readMode = observation.size > 0 ? ReadMode::kRewrite : ReadMode::kNone;
 			return result;
 
-		case InboxTrackingState::kTrackingAppend:
+		case TrackingState::kTrackingAppend:
 			if (!(observation.identity == _fileIdentity)) {
-				result = EnterRewrite(InboxResetReason::kReplaced);
+				result = EnterRewrite(ResetReason::kReplaced);
 			} else if (observation.size < _fileCursor) {
-				result = EnterRewrite(InboxResetReason::kTruncated);
+				result = EnterRewrite(ResetReason::kTruncated);
 			} else if (observation.size == _fileCursor && observation.lastWriteTime != _fileLastWriteTime) {
-				result = EnterRewrite(InboxResetReason::kOverwritten);
+				result = EnterRewrite(ResetReason::kOverwritten);
 			}
 
 			_fileIdentity = observation.identity;
-			if (_trackingState == InboxTrackingState::kRewritePending) {
+			if (_trackingState == TrackingState::kRewritePending) {
 				result.readOffset = 0;
-				result.readMode = observation.size > 0 ? InboxReadMode::kRewrite : InboxReadMode::kNone;
+				result.readMode = observation.size > 0 ? ReadMode::kRewrite : ReadMode::kNone;
 				return result;
 			}
 			_fileLastWriteTime = observation.lastWriteTime;
@@ -88,11 +88,11 @@ namespace Inbox
 		result.pendingFragmentBytes = _pendingFragment.size();
 		result.readOffset = _fileCursor;
 		result.queueAtCapacity = _pendingLines.size() >= _maxPendingLines;
-		result.readMode = observation.size > _fileCursor ? InboxReadMode::kAppendCandidate : InboxReadMode::kNone;
+		result.readMode = observation.size > _fileCursor ? ReadMode::kAppendCandidate : ReadMode::kNone;
 		return result;
 	}
 
-	InboxUpdateResult InboxState::ObserveFile(const InboxFileIdentity& identity, const std::uint64_t fileSize)
+	UpdateResult State::ObserveFile(const FileIdentity& identity, const std::uint64_t fileSize)
 	{
 		return ObserveFile(FileObservation{
 			.identity = identity,
@@ -100,19 +100,19 @@ namespace Inbox
 		});
 	}
 
-	InboxUpdateResult InboxState::AppendObservedContents(const std::uint64_t appendOffset, const std::string_view observedContents)
+	UpdateResult State::AppendObservedContents(const std::uint64_t appendOffset, const std::string_view observedContents)
 	{
 		if (appendOffset > observedContents.size() || appendOffset != _fileCursor) {
-			return EnterRewrite(InboxResetReason::kOverwritten);
+			return EnterRewrite(ResetReason::kOverwritten);
 		}
 
 		const auto prefixSize = static_cast<std::size_t>(appendOffset);
 		if (std::string_view(observedContents.data(), prefixSize) != _acceptedContents) {
-			return EnterRewrite(InboxResetReason::kOverwritten);
+			return EnterRewrite(ResetReason::kOverwritten);
 		}
 
 		if (_pendingLines.size() >= _maxPendingLines) {
-			InboxUpdateResult result{};
+			UpdateResult result{};
 			result.pendingCount = _pendingLines.size();
 			result.pendingFragmentBytes = _pendingFragment.size();
 			result.readOffset = _fileCursor;
@@ -123,9 +123,9 @@ namespace Inbox
 		return AppendChunk(observedContents.substr(prefixSize));
 	}
 
-	InboxUpdateResult InboxState::AppendChunk(std::string_view chunk)
+	UpdateResult State::AppendChunk(std::string_view chunk)
 	{
-		InboxUpdateResult result{};
+		UpdateResult result{};
 		_fileCursor += chunk.size();
 		_acceptedContents.append(chunk);
 		_pendingFragment.append(chunk);
@@ -137,14 +137,14 @@ namespace Inbox
 		return result;
 	}
 
-	InboxUpdateResult InboxState::AcceptRewriteContents(const FileObservation& stableObservation, std::string_view contents)
+	UpdateResult State::AcceptRewriteContents(const FileObservation& stableObservation, std::string_view contents)
 	{
-		InboxUpdateResult result{};
+		UpdateResult result{};
 		_fileIdentity = stableObservation.identity;
 		_fileCursor = stableObservation.size;
 		_fileLastWriteTime = stableObservation.lastWriteTime;
 		_acceptedContents.assign(contents);
-		_trackingState = InboxTrackingState::kTrackingAppend;
+		_trackingState = TrackingState::kTrackingAppend;
 
 		_pendingFragment.assign(contents);
 		if (!_pendingFragment.empty() && _pendingFragment.back() != '\n') {
@@ -159,17 +159,17 @@ namespace Inbox
 		return result;
 	}
 
-	bool InboxState::HasPendingLines() const noexcept
+	bool State::HasPendingLines() const noexcept
 	{
 		return !_pendingLines.empty();
 	}
 
-	std::size_t InboxState::PendingLineCount() const noexcept
+	std::size_t State::PendingLineCount() const noexcept
 	{
 		return _pendingLines.size();
 	}
 
-	std::optional<PendingInputLine> InboxState::FrontLine() const
+	std::optional<PendingLine> State::FrontLine() const
 	{
 		if (_pendingLines.empty()) {
 			return std::nullopt;
@@ -178,7 +178,7 @@ namespace Inbox
 		return _pendingLines.front();
 	}
 
-	bool InboxState::PopFrontLine(const std::uint64_t sequence)
+	bool State::PopFrontLine(const std::uint64_t sequence)
 	{
 		if (!_pendingLines.empty() && _pendingLines.front().sequence == sequence) {
 			_pendingLines.pop_front();
@@ -188,14 +188,14 @@ namespace Inbox
 		return false;
 	}
 
-	std::size_t InboxState::MaxPendingLines() const noexcept
+	std::size_t State::MaxPendingLines() const noexcept
 	{
 		return _maxPendingLines;
 	}
 
-	InboxUpdateResult InboxState::ResetState(const InboxResetReason reason, const std::uint64_t baselineOffset)
+	UpdateResult State::ResetState(const ResetReason reason, const std::uint64_t baselineOffset)
 	{
-		InboxUpdateResult result{};
+		UpdateResult result{};
 		result.resetReason = reason;
 		result.droppedPendingLines = _pendingLines.size();
 		_pendingLines.clear();
@@ -209,14 +209,14 @@ namespace Inbox
 		return result;
 	}
 
-	InboxUpdateResult InboxState::EnterRewrite(const InboxResetReason reason)
+	UpdateResult State::EnterRewrite(const ResetReason reason)
 	{
 		auto result = ResetState(reason, 0);
-		_trackingState = InboxTrackingState::kRewritePending;
+		_trackingState = TrackingState::kRewritePending;
 		return result;
 	}
 
-	void InboxState::ExtractCompleteLines(InboxUpdateResult& result)
+	void State::ExtractCompleteLines(UpdateResult& result)
 	{
 		while (_pendingLines.size() < _maxPendingLines) {
 			const auto newline = _pendingFragment.find('\n');
@@ -227,7 +227,7 @@ namespace Inbox
 			auto line = TrimLine(_pendingFragment.substr(0, newline));
 			_pendingFragment.erase(0, newline + 1);
 			if (!line.empty()) {
-				_pendingLines.push_back(PendingInputLine{ _nextSequence++, std::move(line) });
+				_pendingLines.push_back(PendingLine{ _nextSequence++, std::move(line) });
 				++result.extractedCount;
 			}
 		}

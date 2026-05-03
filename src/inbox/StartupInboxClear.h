@@ -6,7 +6,7 @@
 
 namespace Inbox
 {
-	enum class StartupInboxClearResultKind : std::uint8_t
+	enum class StartupClearResultKind : std::uint8_t
 	{
 		kEstablished,
 		kFailedOpenOrCreate,
@@ -14,13 +14,13 @@ namespace Inbox
 		kFailedClear
 	};
 
-	struct StartupInboxClearResult
+	struct StartupClearResult
 	{
-		StartupInboxClearResultKind kind = StartupInboxClearResultKind::kEstablished;
+		StartupClearResultKind kind = StartupClearResultKind::kEstablished;
 		std::uint32_t errorCode = 0;
 	};
 
-	struct StartupInboxClearAction
+	struct StartupClearAction
 	{
 		bool shouldProceed = false;
 		bool shouldResetState = false;
@@ -29,6 +29,6 @@ namespace Inbox
 		std::string_view failedOperation;
 	};
 
-	[[nodiscard]] StartupInboxClearResult ClearInboxAtStartup(const std::filesystem::path& inboxPath) noexcept;
-	[[nodiscard]] StartupInboxClearAction DescribeStartupInboxClearResult(StartupInboxClearResult result) noexcept;
+	[[nodiscard]] StartupClearResult ClearAtStartup(const std::filesystem::path& inboxPath) noexcept;
+	[[nodiscard]] StartupClearAction DescribeStartupClearResult(StartupClearResult result) noexcept;
 }

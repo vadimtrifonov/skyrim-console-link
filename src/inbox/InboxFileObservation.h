@@ -4,13 +4,13 @@
 
 namespace Inbox
 {
-	struct InboxFileIdentity
+	struct FileIdentity
 	{
 		std::uint32_t volumeSerialNumber = 0;
 		std::uint32_t fileIndexHigh = 0;
 		std::uint32_t fileIndexLow = 0;
 
-		[[nodiscard]] bool operator==(const InboxFileIdentity& other) const noexcept
+		[[nodiscard]] bool operator==(const FileIdentity& other) const noexcept
 		{
 			return volumeSerialNumber == other.volumeSerialNumber &&
 			       fileIndexHigh == other.fileIndexHigh &&
@@ -20,7 +20,7 @@ namespace Inbox
 
 	struct FileObservation
 	{
-		InboxFileIdentity identity{};
+		FileIdentity identity{};
 		std::uint64_t size = 0;
 		std::uint64_t lastWriteTime = 0;
 

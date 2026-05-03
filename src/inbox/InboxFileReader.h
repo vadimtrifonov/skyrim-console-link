@@ -10,49 +10,49 @@
 
 namespace Inbox
 {
-	struct InboxFileMissing
+	struct FileMissing
 	{};
 
-	struct InboxFileError
+	struct FileError
 	{
 		std::string_view operation;
 		std::uint32_t code = 0;
 	};
 
-	using InboxFileReadResult = std::variant<std::string, InboxFileError>;
+	using FileReadResult = std::variant<std::string, FileError>;
 
-	class InboxFile
+	class OpenFile
 	{
 	public:
-		InboxFile() noexcept = default;
-		~InboxFile() noexcept;
+		OpenFile() noexcept = default;
+		~OpenFile() noexcept;
 
-		InboxFile(const InboxFile&) = delete;
-		InboxFile& operator=(const InboxFile&) = delete;
-		InboxFile(InboxFile&& other) noexcept;
-		InboxFile& operator=(InboxFile&& other) noexcept;
+		OpenFile(const OpenFile&) = delete;
+		OpenFile& operator=(const OpenFile&) = delete;
+		OpenFile(OpenFile&& other) noexcept;
+		OpenFile& operator=(OpenFile&& other) noexcept;
 
 		[[nodiscard]] const FileObservation& Observation() const noexcept;
-		[[nodiscard]] InboxFileReadResult ReadAt(std::uint64_t offset, std::uint64_t byteCount) const noexcept;
+		[[nodiscard]] FileReadResult ReadAt(std::uint64_t offset, std::uint64_t byteCount) const noexcept;
 
 	private:
-		friend class InboxFileReader;
+		friend class FileReader;
 
-		InboxFile(void* handle, FileObservation observation) noexcept;
+		OpenFile(void* handle, FileObservation observation) noexcept;
 		void Close() noexcept;
 
 		void* _handle = nullptr;
 		FileObservation _observation{};
 	};
 
-	using InboxFileResult = std::variant<InboxFile, InboxFileMissing, InboxFileError>;
+	using OpenResult = std::variant<OpenFile, FileMissing, FileError>;
 
-	class InboxFileReader
+	class FileReader
 	{
 	public:
-		explicit InboxFileReader(std::filesystem::path inboxPath);
+		explicit FileReader(std::filesystem::path inboxPath);
 
-		[[nodiscard]] InboxFileResult Open() const noexcept;
+		[[nodiscard]] OpenResult Open() const noexcept;
 
 	private:
 		std::filesystem::path _inboxPath;

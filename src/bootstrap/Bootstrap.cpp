@@ -46,7 +46,7 @@ namespace
 		}
 	}
 
-	std::filesystem::path ResolveInboxPath(const Settings::Values& settings)
+	std::filesystem::path ResolvePath(const Settings::Values& settings)
 	{
 		const auto configuredInboxPath = settings.inboxPath;
 		if (!settings.enableInbox || configuredInboxPath.empty() || configuredInboxPath.is_absolute()) {
@@ -58,7 +58,7 @@ namespace
 			SKSE::stl::report_and_fail("Failed to resolve the standard SKSE log directory for enabled relative inbox path resolution.");
 		}
 
-		const auto resolvedInboxPath = Inbox::ResolveInboxPath(Inbox::InboxPathContext{
+		const auto resolvedInboxPath = Inbox::ResolvePath(Inbox::PathContext{
 			.configuredPath = configuredInboxPath,
 			.logDirectory = *logDirectory,
 		});
@@ -96,7 +96,7 @@ namespace Bootstrap
 		logs::info("Initializing ConsoleLink on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
 
 		auto loadResult = LoadSettings();
-		auto inboxPath = ResolveInboxPath(loadResult.settings);
+		auto inboxPath = ResolvePath(loadResult.settings);
 
 		logs::info(
 			"Settings inbox_path='{}' resolved_inbox_path='{}' max_inbox_lines_per_tick={}",

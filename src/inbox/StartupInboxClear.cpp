@@ -33,7 +33,7 @@ namespace Inbox
 	constexpr std::string_view kStartupInboxClearFailureLine =
 		"inbox startup failed: could not clear existing inbox contents";
 
-	StartupInboxClearResult ClearInboxAtStartup(const std::filesystem::path& inboxPath) noexcept
+	StartupClearResult ClearAtStartup(const std::filesystem::path& inboxPath) noexcept
 	{
 		const auto handle = ScopedHandle(::CreateFileW(
 			inboxPath.c_str(),
@@ -45,50 +45,50 @@ namespace Inbox
 			nullptr));
 
 		if (handle.get() == INVALID_HANDLE_VALUE) {
-			return { StartupInboxClearResultKind::kFailedOpenOrCreate, ::GetLastError() };
+			return { StartupClearResultKind::kFailedOpenOrCreate, ::GetLastError() };
 		}
 
 		LARGE_INTEGER fileSize{};
 		if (!::GetFileSizeEx(handle.get(), &fileSize)) {
-			return { StartupInboxClearResultKind::kFailedInspect, ::GetLastError() };
+			return { StartupClearResultKind::kFailedInspect, ::GetLastError() };
 		}
 
 		if (fileSize.QuadPart != 0) {
 			LARGE_INTEGER zero{};
 			if (!::SetFilePointerEx(handle.get(), zero, nullptr, FILE_BEGIN)) {
-				return { StartupInboxClearResultKind::kFailedClear, ::GetLastError() };
+				return { StartupClearResultKind::kFailedClear, ::GetLastError() };
 			}
 
 			if (!::SetEndOfFile(handle.get())) {
-				return { StartupInboxClearResultKind::kFailedClear, ::GetLastError() };
+				return { StartupClearResultKind::kFailedClear, ::GetLastError() };
 			}
 		}
 
 		return {};
 	}
 
-	StartupInboxClearAction DescribeStartupInboxClearResult(const StartupInboxClearResult result) noexcept
+	StartupClearAction DescribeStartupClearResult(const StartupClearResult result) noexcept
 	{
 		switch (result.kind) {
-		case StartupInboxClearResultKind::kEstablished:
+		case StartupClearResultKind::kEstablished:
 			return {
 				.shouldProceed = true,
 				.shouldResetState = true,
 				.localActivityLine = "inbox ready for new input",
 			};
-		case StartupInboxClearResultKind::kFailedOpenOrCreate:
+		case StartupClearResultKind::kFailedOpenOrCreate:
 			return {
 				.localActivityLine = kStartupInboxClearFailureLine,
 				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "open-or-create",
 			};
-		case StartupInboxClearResultKind::kFailedInspect:
+		case StartupClearResultKind::kFailedInspect:
 			return {
 				.localActivityLine = kStartupInboxClearFailureLine,
 				.disableReason = kStartupInboxClearFailureLine,
 				.failedOperation = "size",
 			};
-		case StartupInboxClearResultKind::kFailedClear:
+		case StartupClearResultKind::kFailedClear:
 			return {
 				.localActivityLine = kStartupInboxClearFailureLine,
 				.disableReason = kStartupInboxClearFailureLine,

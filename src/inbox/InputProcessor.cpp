@@ -72,18 +72,18 @@ namespace
 		return ToUtf8(path.native());
 	}
 
-	std::string_view DescribeResetReason(const Inbox::InboxResetReason reason) noexcept
+	std::string_view DescribeResetReason(const Inbox::ResetReason reason) noexcept
 	{
 		switch (reason) {
-		case Inbox::InboxResetReason::kRemoved:
+		case Inbox::ResetReason::kRemoved:
 			return "was removed";
-		case Inbox::InboxResetReason::kTruncated:
+		case Inbox::ResetReason::kTruncated:
 			return "was truncated";
-		case Inbox::InboxResetReason::kReplaced:
+		case Inbox::ResetReason::kReplaced:
 			return "was atomically replaced";
-		case Inbox::InboxResetReason::kOverwritten:
+		case Inbox::ResetReason::kOverwritten:
 			return "was overwritten";
-		case Inbox::InboxResetReason::kNone:
+		case Inbox::ResetReason::kNone:
 		default:
 			return "";
 		}
@@ -159,8 +159,8 @@ namespace
 
 		[[nodiscard]] bool EstablishInboxReadiness()
 		{
-			const auto result = Inbox::ClearInboxAtStartup(_inboxPath);
-			const auto action = Inbox::DescribeStartupInboxClearResult(result);
+			const auto result = Inbox::ClearAtStartup(_inboxPath);
+			const auto action = Inbox::DescribeStartupClearResult(result);
 			if (!action.shouldProceed) {
 				return FailStartupInboxClear(action, result.errorCode);
 			}
@@ -187,28 +187,28 @@ namespace
 
 		void PollInbox()
 		{
-			const Inbox::InboxFileReader reader(_inboxPath);
+			const Inbox::FileReader reader(_inboxPath);
 			auto opened = reader.Open();
-			if (std::holds_alternative<Inbox::InboxFileMissing>(opened)) {
+			if (std::holds_alternative<Inbox::FileMissing>(opened)) {
 				HandleMissingInbox();
 				return;
 			}
 
-			if (const auto* error = std::get_if<Inbox::InboxFileError>(&opened)) {
+			if (const auto* error = std::get_if<Inbox::FileError>(&opened)) {
 				ReportFileError(error->operation, error->code);
 				return;
 			}
 
-			auto& file = std::get<Inbox::InboxFile>(opened);
+			auto& file = std::get<Inbox::OpenFile>(opened);
 			ClearFileErrorState();
 			const auto observeResult = ObserveInbox(file.Observation());
 			switch (observeResult.readMode) {
-			case Inbox::InboxReadMode::kNone:
+			case Inbox::ReadMode::kNone:
 				return;
-			case Inbox::InboxReadMode::kAppendCandidate:
+			case Inbox::ReadMode::kAppendCandidate:
 				ReadAppend(reader, file, observeResult.readOffset);
 				return;
-			case Inbox::InboxReadMode::kRewrite:
+			case Inbox::ReadMode::kRewrite:
 				ReadRewrite(reader, file);
 				return;
 			}
@@ -216,7 +216,7 @@ namespace
 
 		void HandleMissingInbox()
 		{
-			Inbox::InboxUpdateResult updateResult{};
+			Inbox::UpdateResult updateResult{};
 			{
 				std::scoped_lock lock(_stateLock);
 				updateResult = _inboxState.ObserveMissingFile();
@@ -225,9 +225,9 @@ namespace
 			ClearFileErrorState();
 		}
 
-		Inbox::InboxUpdateResult ObserveInbox(const Inbox::FileObservation& observation)
+		Inbox::UpdateResult ObserveInbox(const Inbox::FileObservation& observation)
 		{
-			Inbox::InboxUpdateResult observeResult{};
+			Inbox::UpdateResult observeResult{};
 			{
 				std::scoped_lock lock(_stateLock);
 				observeResult = _inboxState.ObserveFile(observation);
@@ -236,12 +236,12 @@ namespace
 			return observeResult;
 		}
 
-		void ReadAppend(const Inbox::InboxFileReader& reader, const Inbox::InboxFile& file, const std::uint64_t readOffset)
+		void ReadAppend(const Inbox::FileReader& reader, const Inbox::OpenFile& file, const std::uint64_t readOffset)
 		{
 			const auto size = file.Observation().size;
 			const auto bytesToRead = std::min<std::uint64_t>(size - readOffset, kMaxNewBytesPerPoll);
 			auto read = file.ReadAt(0, readOffset + bytesToRead);
-			if (const auto* error = std::get_if<Inbox::InboxFileError>(&read)) {
+			if (const auto* error = std::get_if<Inbox::FileError>(&read)) {
 				ReportFileError(error->operation, error->code);
 				return;
 			}
@@ -251,23 +251,23 @@ namespace
 				return;
 			}
 
-			Inbox::InboxUpdateResult appendResult{};
+			Inbox::UpdateResult appendResult{};
 			{
 				std::scoped_lock lock(_stateLock);
 				appendResult = _inboxState.AppendObservedContents(readOffset, observedContents);
 			}
 			LogInboxUpdate(appendResult);
 
-			if (appendResult.resetReason == Inbox::InboxResetReason::kOverwritten) {
+			if (appendResult.resetReason == Inbox::ResetReason::kOverwritten) {
 				ReadRewrite(reader, file);
 			}
 		}
 
-		void ReadRewrite(const Inbox::InboxFileReader& reader, const Inbox::InboxFile& file)
+		void ReadRewrite(const Inbox::FileReader& reader, const Inbox::OpenFile& file)
 		{
 			const auto beforeRead = file.Observation();
 			auto read = file.ReadAt(0, beforeRead.size);
-			if (const auto* error = std::get_if<Inbox::InboxFileError>(&read)) {
+			if (const auto* error = std::get_if<Inbox::FileError>(&read)) {
 				ReportFileError(error->operation, error->code);
 				return;
 			}
@@ -278,17 +278,17 @@ namespace
 			}
 
 			auto afterRead = reader.Open();
-			if (const auto* error = std::get_if<Inbox::InboxFileError>(&afterRead)) {
+			if (const auto* error = std::get_if<Inbox::FileError>(&afterRead)) {
 				ReportFileError(error->operation, error->code);
 				return;
 			}
 
-			const auto* afterFile = std::get_if<Inbox::InboxFile>(&afterRead);
+			const auto* afterFile = std::get_if<Inbox::OpenFile>(&afterRead);
 			if (afterFile == nullptr || !(beforeRead == afterFile->Observation())) {
 				return;
 			}
 
-			Inbox::InboxUpdateResult rewriteResult{};
+			Inbox::UpdateResult rewriteResult{};
 			{
 				std::scoped_lock lock(_stateLock);
 				rewriteResult = _inboxState.AcceptRewriteContents(afterFile->Observation(), bytes);
@@ -296,9 +296,9 @@ namespace
 			LogInboxUpdate(rewriteResult);
 		}
 
-		void LogInboxUpdate(const Inbox::InboxUpdateResult& result)
+		void LogInboxUpdate(const Inbox::UpdateResult& result)
 		{
-			if (result.resetReason != Inbox::InboxResetReason::kNone) {
+			if (result.resetReason != Inbox::ResetReason::kNone) {
 				if (result.droppedPendingLines > 0) {
 					logs::info(
 						"Inbox '{}' {}; dropped {} pending line(s) from the previous file contents",
@@ -386,7 +386,7 @@ namespace
 
 			const auto lineBudget = std::max<std::uint32_t>(_settings.maxInboxLinesPerTick, 1);
 			for (std::uint32_t index = 0; index < lineBudget; ++index) {
-				std::optional<Inbox::PendingInputLine> line;
+				std::optional<Inbox::PendingLine> line;
 				{
 					std::scoped_lock lock(_stateLock);
 					auto front = _inboxState.FrontLine();
@@ -448,7 +448,7 @@ namespace
 				FormatWindowsError(errorCode));
 		}
 
-		[[nodiscard]] bool FailStartupInboxClear(const Inbox::StartupInboxClearAction& action, DWORD errorCode)
+		[[nodiscard]] bool FailStartupInboxClear(const Inbox::StartupClearAction& action, DWORD errorCode)
 		{
 			ReportFileError(action.failedOperation, errorCode);
 			Logging::LogLocalActivityLine(action.localActivityLine);
@@ -467,7 +467,7 @@ namespace
 		std::jthread _worker;
 		std::mutex _workerStartLock;
 		std::mutex _stateLock;
-		Inbox::InboxState _inboxState;
+		Inbox::State _inboxState;
 		Inbox::WorkerStartState _workerStartState;
 		std::atomic_bool _initialized = false;
 		std::atomic_bool _serviceDisabled = false;

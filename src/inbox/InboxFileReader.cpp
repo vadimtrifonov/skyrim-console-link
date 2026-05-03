@@ -31,22 +31,22 @@ namespace
 
 namespace Inbox
 {
-	InboxFile::InboxFile(void* handle, FileObservation observation) noexcept :
+	OpenFile::OpenFile(void* handle, FileObservation observation) noexcept :
 		_handle(handle),
 		_observation(observation)
 	{}
 
-	InboxFile::~InboxFile() noexcept
+	OpenFile::~OpenFile() noexcept
 	{
 		Close();
 	}
 
-	InboxFile::InboxFile(InboxFile&& other) noexcept :
+	OpenFile::OpenFile(OpenFile&& other) noexcept :
 		_handle(std::exchange(other._handle, nullptr)),
 		_observation(other._observation)
 	{}
 
-	InboxFile& InboxFile::operator=(InboxFile&& other) noexcept
+	OpenFile& OpenFile::operator=(OpenFile&& other) noexcept
 	{
 		if (this != &other) {
 			Close();
@@ -57,36 +57,36 @@ namespace Inbox
 		return *this;
 	}
 
-	const FileObservation& InboxFile::Observation() const noexcept
+	const FileObservation& OpenFile::Observation() const noexcept
 	{
 		return _observation;
 	}
 
-	InboxFileReadResult InboxFile::ReadAt(const std::uint64_t offset, const std::uint64_t byteCount) const noexcept
+	FileReadResult OpenFile::ReadAt(const std::uint64_t offset, const std::uint64_t byteCount) const noexcept
 	{
 		if (byteCount > 0xFFFFFFFFull) {
-			return InboxFileError{ .operation = "read-size", .code = ERROR_INVALID_PARAMETER };
+			return FileError{ .operation = "read-size", .code = ERROR_INVALID_PARAMETER };
 		}
 
 		LARGE_INTEGER seekOffset{};
 		seekOffset.QuadPart = static_cast<LONGLONG>(offset);
 		const auto handle = static_cast<HANDLE>(_handle);
 		if (!::SetFilePointerEx(handle, seekOffset, nullptr, FILE_BEGIN)) {
-			return InboxFileError{ .operation = "seek", .code = ::GetLastError() };
+			return FileError{ .operation = "seek", .code = ::GetLastError() };
 		}
 
 		const auto bytesToRead = static_cast<DWORD>(byteCount);
 		std::string bytes(bytesToRead, '\0');
 		DWORD bytesRead = 0;
 		if (!::ReadFile(handle, bytes.data(), bytesToRead, &bytesRead, nullptr)) {
-			return InboxFileError{ .operation = "read", .code = ::GetLastError() };
+			return FileError{ .operation = "read", .code = ::GetLastError() };
 		}
 
 		bytes.resize(bytesRead);
 		return std::move(bytes);
 	}
 
-	void InboxFile::Close() noexcept
+	void OpenFile::Close() noexcept
 	{
 		if (_handle != nullptr) {
 			::CloseHandle(static_cast<HANDLE>(_handle));
@@ -94,11 +94,11 @@ namespace Inbox
 		}
 	}
 
-	InboxFileReader::InboxFileReader(std::filesystem::path inboxPath) :
+	FileReader::FileReader(std::filesystem::path inboxPath) :
 		_inboxPath(std::move(inboxPath))
 	{}
 
-	InboxFileResult InboxFileReader::Open() const noexcept
+	OpenResult FileReader::Open() const noexcept
 	{
 		const auto handle = ::CreateFileW(
 			_inboxPath.c_str(),
@@ -112,19 +112,19 @@ namespace Inbox
 		if (handle == INVALID_HANDLE_VALUE) {
 			const auto errorCode = ::GetLastError();
 			if (errorCode == ERROR_FILE_NOT_FOUND || errorCode == ERROR_PATH_NOT_FOUND) {
-				return InboxFileMissing{};
+				return FileMissing{};
 			}
 
-			return InboxFileError{ .operation = "open", .code = errorCode };
+			return FileError{ .operation = "open", .code = errorCode };
 		}
 
 		FileObservation observation{};
 		DWORD errorCode = ERROR_SUCCESS;
 		if (!TryObserveOpenFile(handle, observation, errorCode)) {
 			::CloseHandle(handle);
-			return InboxFileError{ .operation = "observe", .code = errorCode };
+			return FileError{ .operation = "observe", .code = errorCode };
 		}
 
-		return InboxFile(handle, observation);
+		return OpenFile(handle, observation);
 	}
 }

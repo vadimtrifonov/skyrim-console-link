@@ -4,9 +4,9 @@
 
 namespace Inbox
 {
-	ResolvedInboxPath ResolveInboxPath(const InboxPathContext& context)
+	ResolvedPath ResolvePath(const PathContext& context)
 	{
-		ResolvedInboxPath result{};
+		ResolvedPath result{};
 		result.configuredPath = context.configuredPath;
 		result.resolvedPath = context.configuredPath;
 

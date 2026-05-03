@@ -16,7 +16,7 @@ namespace
 {
 	void SwallowFailSoftBoundary() noexcept {}
 
-	enum class LocalCommandKind : std::uint8_t
+	enum class CommandKind : std::uint8_t
 	{
 		kLookup,
 		kLookupForm,
@@ -29,37 +29,37 @@ namespace
 	using LocalCommands::ConsumeToken;
 	using LocalCommands::TrimAscii;
 
-	LocalCommandKind ParseLocalCommandKind(std::string_view commandName) noexcept
+	CommandKind ParseCommandKind(std::string_view commandName) noexcept
 	{
 		if (commandName == "cdbg.lookup") {
-			return LocalCommandKind::kLookup;
+			return CommandKind::kLookup;
 		}
 		if (commandName == "cdbg.lookup-prefix") {
-			return LocalCommandKind::kLookupPrefix;
+			return CommandKind::kLookupPrefix;
 		}
 		if (commandName == "cdbg.lookup-form") {
-			return LocalCommandKind::kLookupForm;
+			return CommandKind::kLookupForm;
 		}
 		if (commandName == "cdbg.lookup-lvli") {
-			return LocalCommandKind::kLookupLvli;
+			return CommandKind::kLookupLvli;
 		}
 		if (commandName == "cdbg.lookup-lvli-form") {
-			return LocalCommandKind::kLookupLvliForm;
+			return CommandKind::kLookupLvliForm;
 		}
 
-		return LocalCommandKind::kUnknown;
+		return CommandKind::kUnknown;
 	}
 
-	struct LocalCommandState
+	struct State
 	{
 		std::mutex lock;
 		bool ready = false;
 		bool initialized = false;
 	};
 
-	LocalCommandState& GetState()
+	State& GetState()
 	{
-		static LocalCommandState state;
+		static State state;
 		return state;
 	}
 
@@ -146,23 +146,23 @@ namespace LocalCommands
 			Logging::LogLocalActivityLine(line);
 
 			std::vector<std::string> responseLines;
-			switch (ParseLocalCommandKind(commandName)) {
-			case LocalCommandKind::kLookup:
+			switch (ParseCommandKind(commandName)) {
+			case CommandKind::kLookup:
 				responseLines = ExecuteLookupCommand(arguments);
 				break;
-			case LocalCommandKind::kLookupForm:
+			case CommandKind::kLookupForm:
 				responseLines = ExecuteLookupFormCommand(arguments);
 				break;
-			case LocalCommandKind::kLookupLvli:
+			case CommandKind::kLookupLvli:
 				responseLines = ExecuteLookupLvliCommand(arguments);
 				break;
-			case LocalCommandKind::kLookupLvliForm:
+			case CommandKind::kLookupLvliForm:
 				responseLines = ExecuteLookupLvliFormCommand(arguments);
 				break;
-			case LocalCommandKind::kLookupPrefix:
+			case CommandKind::kLookupPrefix:
 				responseLines = ExecuteLookupPrefixCommand(arguments);
 				break;
-			case LocalCommandKind::kUnknown:
+			case CommandKind::kUnknown:
 			default:
 				responseLines.push_back(
 					"unknown local command \"" + std::string(commandName) +

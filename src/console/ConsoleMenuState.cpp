@@ -8,7 +8,7 @@
 
 namespace
 {
-	std::atomic_bool g_consoleMenuOpen = false;
+	std::atomic_bool g_menuOpen = false;
 	std::atomic_bool g_menuEventSinkRegistered = false;
 	std::atomic<Console::MenuState::StateChangeHandler> g_stateChangeHandler = nullptr;
 
@@ -31,7 +31,7 @@ namespace
 		});
 	}
 
-	class ConsoleMenuEventSink final : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+	class MenuEventSink final : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
 	public:
 		RE::BSEventNotifyControl ProcessEvent(
@@ -42,7 +42,7 @@ namespace
 				return RE::BSEventNotifyControl::kContinue;
 			}
 
-			const auto previous = g_consoleMenuOpen.exchange(event->opening);
+			const auto previous = g_menuOpen.exchange(event->opening);
 			if (previous != event->opening) {
 				NotifyStateChange(event->opening);
 			}
@@ -51,9 +51,9 @@ namespace
 		}
 	};
 
-	ConsoleMenuEventSink& GetConsoleMenuEventSink()
+	MenuEventSink& GetMenuEventSink()
 	{
-		static ConsoleMenuEventSink sink;
+		static MenuEventSink sink;
 		return sink;
 	}
 }
@@ -73,8 +73,8 @@ namespace Console::MenuState
 			return;
 		}
 
-		ui->AddEventSink<RE::MenuOpenCloseEvent>(&GetConsoleMenuEventSink());
-		g_consoleMenuOpen = ui->IsMenuOpen(RE::Console::MENU_NAME);
+		ui->AddEventSink<RE::MenuOpenCloseEvent>(&GetMenuEventSink());
+		g_menuOpen = ui->IsMenuOpen(RE::Console::MENU_NAME);
 		g_menuEventSinkRegistered = true;
 	}
 
@@ -87,6 +87,6 @@ namespace Console::MenuState
 	bool IsConsoleMenuOpen() noexcept
 	{
 		Initialize();
-		return g_consoleMenuOpen.load();
+		return g_menuOpen.load();
 	}
 }

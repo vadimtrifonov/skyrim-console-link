@@ -4,17 +4,17 @@
 
 namespace Inbox
 {
-	struct ResolvedInboxPath
+	struct ResolvedPath
 	{
 		std::filesystem::path configuredPath;
 		std::filesystem::path resolvedPath;
 	};
 
-	struct InboxPathContext
+	struct PathContext
 	{
 		std::filesystem::path configuredPath;
 		std::filesystem::path logDirectory;
 	};
 
-	[[nodiscard]] ResolvedInboxPath ResolveInboxPath(const InboxPathContext& context);
+	[[nodiscard]] ResolvedPath ResolvePath(const PathContext& context);
 }
