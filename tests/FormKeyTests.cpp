@@ -12,51 +12,61 @@ namespace
 		}
 	}
 
-	void TestBuildRuntimeFormIDForRegularPlugin()
+	void TestParseFormKeyAcceptsPluginAndHexFormID()
 	{
-		const auto runtimeFormID = LocalCommands::BuildRuntimeFormID(
-			LocalCommands::PluginLoadAddress{
-				.compileIndex = 0x02,
-				.smallFileCompileIndex = 0,
-				.isLight = false,
-			},
-			0x0003DF19);
-
-		Expect(runtimeFormID.has_value(), "regular plugin runtime form ID should resolve");
-		Expect(*runtimeFormID == 0x0203DF19, "regular plugin runtime form ID should include the compile index");
+		const auto parsed = LocalCommands::ParseFormKey("Skyrim.esm|0003DF19");
+		Expect(parsed.has_value(), "valid form key should parse");
+		Expect(parsed->plugin == "Skyrim.esm", "parsed form key should preserve plugin filename");
+		Expect(parsed->formID == 0x0003DF19, "parsed form key should parse hex form ID");
 	}
 
-	void TestBuildRuntimeFormIDForLightPlugin()
+	void TestParseFormKeyAllowsPluginFilenameWithSpaces()
 	{
-		const auto runtimeFormID = LocalCommands::BuildRuntimeFormID(
-			LocalCommands::PluginLoadAddress{
-				.compileIndex = 0xFE,
-				.smallFileCompileIndex = 0x041B,
-				.isLight = true,
-			},
-			0x00000DFD);
-
-		Expect(runtimeFormID.has_value(), "light plugin runtime form ID should resolve");
-		Expect(*runtimeFormID == 0xFE41BDFD, "light plugin runtime form ID should preserve the ESL subindex");
+		const auto parsed = LocalCommands::ParseFormKey("Sentinel - Master Plugin.esp|00000ABC");
+		Expect(parsed.has_value(), "plugin filename with spaces should parse");
+		Expect(parsed->plugin == "Sentinel - Master Plugin.esp", "plugin filename with spaces should be preserved");
+		Expect(parsed->formID == 0x00000ABC, "form ID should parse for plugin filename with spaces");
 	}
 
-	void TestBuildRuntimeFormIDRejectsUnloadedPlugin()
+	void TestParseFormKeyRejectsMissingSeparator()
 	{
-		const auto runtimeFormID = LocalCommands::BuildRuntimeFormID(
-			LocalCommands::PluginLoadAddress{
-				.compileIndex = 0xFF,
-				.smallFileCompileIndex = 0,
-				.isLight = false,
-			},
-			0x0003DF19);
+		Expect(!LocalCommands::ParseFormKey("Skyrim.esm 0003DF19").has_value(), "missing separator should not parse");
+	}
 
-		Expect(!runtimeFormID.has_value(), "unloaded plugin should not produce a runtime form ID");
+	void TestParseFormKeyRejectsEmptyPlugin()
+	{
+		Expect(!LocalCommands::ParseFormKey("|0003DF19").has_value(), "empty plugin should not parse");
+	}
+
+	void TestParseFormKeyRejectsEmptyFormID()
+	{
+		Expect(!LocalCommands::ParseFormKey("Skyrim.esm|").has_value(), "empty form ID should not parse");
+	}
+
+	void TestParseFormKeyRejectsMultipleSeparators()
+	{
+		Expect(!LocalCommands::ParseFormKey("Skyrim.esm|0003DF19|extra").has_value(), "multiple separators should not parse");
+	}
+
+	void TestParseFormKeyRejectsNonHexFormID()
+	{
+		Expect(!LocalCommands::ParseFormKey("Skyrim.esm|nothex").has_value(), "non-hex form ID should not parse");
+	}
+
+	void TestParseFormKeyRejectsNonLocalFormID()
+	{
+		Expect(!LocalCommands::ParseFormKey("Skyrim.esm|01000000").has_value(), "non-local form ID should not parse");
 	}
 }
 
 void RunFormKeyTests()
 {
-	TestBuildRuntimeFormIDForRegularPlugin();
-	TestBuildRuntimeFormIDForLightPlugin();
-	TestBuildRuntimeFormIDRejectsUnloadedPlugin();
+	TestParseFormKeyAcceptsPluginAndHexFormID();
+	TestParseFormKeyAllowsPluginFilenameWithSpaces();
+	TestParseFormKeyRejectsMissingSeparator();
+	TestParseFormKeyRejectsEmptyPlugin();
+	TestParseFormKeyRejectsEmptyFormID();
+	TestParseFormKeyRejectsMultipleSeparators();
+	TestParseFormKeyRejectsNonHexFormID();
+	TestParseFormKeyRejectsNonLocalFormID();
 }

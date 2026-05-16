@@ -17,37 +17,29 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $enterDevShell = Join-Path $PSScriptRoot "Enter-DevShell.ps1"
-
-function Resolve-CommonLibRoot
-{
-    return Join-Path $repoRoot "lib/commonlibsse-ng"
-}
-
-function Get-CommonLibSetupCommand
-{
-    return "git submodule update --init --recursive"
-}
+$submodulePath = "lib/commonlibvr"
+$submoduleRoot = Join-Path $repoRoot $submodulePath
 
 function Get-ExpectedCommonLibCommit
 {
-    $entry = (& git -C $repoRoot ls-files --stage -- lib/commonlibsse-ng | Select-Object -First 1)
+    $entry = (& git -C $repoRoot ls-files --stage -- $submodulePath | Select-Object -First 1)
     if ($entry) {
         $parts = $entry -split '\s+'
         if ($parts.Count -ge 2) {
             return $parts[1]
         }
 
-        throw "Unexpected ls-files output for lib/commonlibsse-ng: $entry"
+        throw "Unexpected ls-files output for ${submodulePath}: $entry"
     }
 
-    $entry = & git -C $repoRoot ls-tree HEAD lib/commonlibsse-ng
+    $entry = & git -C $repoRoot ls-tree HEAD $submodulePath
     if (-not $entry) {
-        throw "Could not read the pinned CommonLibSSE-NG submodule entry from the index or HEAD."
+        throw "Could not read the pinned CommonLibVR submodule entry from the index or HEAD."
     }
 
     $parts = $entry -split '\s+'
     if ($parts.Count -lt 3) {
-        throw "Unexpected ls-tree output for lib/commonlibsse-ng: $entry"
+        throw "Unexpected ls-tree output for ${submodulePath}: $entry"
     }
 
     return $parts[2]
@@ -55,29 +47,27 @@ function Get-ExpectedCommonLibCommit
 
 function Assert-CommonLibReady
 {
-    $commonLibRoot = Resolve-CommonLibRoot
-    $setupCommand = Get-CommonLibSetupCommand
-    if (-not (Test-Path -LiteralPath $commonLibRoot)) {
-        throw "CommonLibSSE-NG is missing at '$commonLibRoot'. This repo expects that directory to be populated by Git submodules. Run '$setupCommand' from the repo root."
+    if (-not (Test-Path -LiteralPath $submoduleRoot)) {
+        throw "CommonLibVR is missing at '$submoduleRoot'. Run 'git submodule update --init --recursive' from the repo root."
     }
 
-    $commonLibXmake = Join-Path $commonLibRoot "xmake.lua"
+    $commonLibXmake = Join-Path $submoduleRoot "xmake.lua"
     if (-not (Test-Path -LiteralPath $commonLibXmake)) {
-        throw "CommonLibSSE-NG at '$commonLibRoot' is incomplete. Expected xmake project at '$commonLibXmake'. Re-run '$setupCommand' from the repo root."
+        throw "CommonLibVR at '$submoduleRoot' is incomplete. Expected xmake project at '$commonLibXmake'."
     }
 
-    $gitDir = Join-Path $commonLibRoot ".git"
+    $gitDir = Join-Path $submoduleRoot ".git"
     if (-not (Test-Path -LiteralPath $gitDir)) {
-        throw "CommonLibSSE-NG at '$commonLibRoot' is not initialized as a submodule. Run '$setupCommand' from the repo root."
+        throw "CommonLibVR at '$submoduleRoot' is not initialized as a submodule. Run 'git submodule update --init --recursive' from the repo root."
     }
 
     $expectedCommit = Get-ExpectedCommonLibCommit
-    $actualCommit = (& git -C $commonLibRoot rev-parse HEAD).Trim()
+    $actualCommit = (& git -C $submoduleRoot rev-parse HEAD).Trim()
     if ($actualCommit -ne $expectedCommit) {
-        throw "CommonLibSSE-NG at '$commonLibRoot' is at $actualCommit but the repo pins $expectedCommit. Sync the submodule before building."
+        throw "CommonLibVR at '$submoduleRoot' is at $actualCommit but the repo pins $expectedCommit. Sync the submodule before building."
     }
 
-    return $commonLibRoot
+    return $submoduleRoot
 }
 
 if (-not (Get-Command xmake -ErrorAction SilentlyContinue) -or -not (Get-Command cl -ErrorAction SilentlyContinue)) {
@@ -98,7 +88,7 @@ if ($env:WindowsSDKVersion) {
     $sdkVersion = $env:WindowsSDKVersion.TrimEnd("\")
 }
 
-$configureArgs = @("f", "-y", "-m", $Mode)
+$configureArgs = @("f", "-y", "-p", "windows", "-a", "x64", "-m", $Mode)
 if ($Reconfigure) {
     $configureArgs += "-c"
 }

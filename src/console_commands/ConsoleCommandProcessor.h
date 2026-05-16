@@ -1,7 +1,5 @@
 #pragma once
 
-#include "settings/Settings.h"
-
 #include <string_view>
 
 namespace ConsoleCommands
@@ -12,6 +10,6 @@ namespace ConsoleCommands
 		kRejected
 	};
 
-	void Initialize(const Settings::Values& settings) noexcept;
+	void Initialize() noexcept;
 	[[nodiscard]] ProcessResult Process(std::string_view line) noexcept;
 }

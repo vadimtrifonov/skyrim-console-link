@@ -105,11 +105,6 @@ namespace
 				return;
 			}
 
-			if (!REL::Module::IsVR()) {
-				logs::warn("Skipping inbox processing: the current implementation slice is VR-only");
-				return;
-			}
-
 			if (!settings.enableInbox) {
 				logs::info("Inbox processing is disabled; inbox service will remain dormant");
 				return;
@@ -119,7 +114,7 @@ namespace
 			_inboxPath = inboxPath;
 
 			LocalCommands::Initialize();
-			ConsoleCommands::Initialize(settings);
+			ConsoleCommands::Initialize();
 
 			logs::info("Inbox processing watching '{}'", PathToString(_inboxPath));
 			StartWorker();

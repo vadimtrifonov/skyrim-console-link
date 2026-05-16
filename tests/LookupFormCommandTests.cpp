@@ -33,6 +33,13 @@ namespace
 		Expect(result.front() == "usage: cdbg.lookup-form <plugin>|<local-formid>", "non-hex form token should return usage");
 	}
 
+	void TestLookupFormRejectsNonLocalFormID()
+	{
+		const auto result = LocalCommands::ExecuteLookupFormCommand("Skyrim.esm|01000000", {});
+		Expect(result.size() == 1, "non-local form ID should return one response line");
+		Expect(result.front() == "usage: cdbg.lookup-form <plugin>|<local-formid>", "non-local form ID should return usage");
+	}
+
 	void TestLookupFormReportsMiss()
 	{
 		const auto result = LocalCommands::ExecuteLookupFormCommand("Skyrim.esm|0003DF19", std::nullopt);
@@ -98,6 +105,7 @@ void RunLookupFormCommandTests()
 	TestLookupFormRequiresFormKey();
 	TestLookupFormRejectsMalformedKey();
 	TestLookupFormRejectsNonHexFormToken();
+	TestLookupFormRejectsNonLocalFormID();
 	TestLookupFormReportsMiss();
 	TestLookupFormHitIncludesIdentifyingMetadata();
 	TestLookupFormAllowsPluginFilenameWithSpaces();

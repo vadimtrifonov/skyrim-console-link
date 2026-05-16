@@ -2,10 +2,16 @@
 
 namespace
 {
+	constexpr std::string_view kUtf8Bom{ "\xEF\xBB\xBF", 3 };
+
 	std::string TrimLine(std::string value)
 	{
 		while (!value.empty() && (value.back() == '\r' || value.back() == '\n')) {
 			value.pop_back();
+		}
+
+		if (value.starts_with(kUtf8Bom)) {
+			value.erase(0, kUtf8Bom.size());
 		}
 
 		return value;

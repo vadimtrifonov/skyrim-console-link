@@ -6,29 +6,36 @@
 #include "RE/M/MenuOpenCloseEvent.h"
 #include "RE/U/UI.h"
 
+#include <vector>
+
 namespace
 {
 	std::atomic_bool g_menuOpen = false;
 	std::atomic_bool g_menuEventSinkRegistered = false;
-	std::atomic<Console::MenuState::StateChangeHandler> g_stateChangeHandler = nullptr;
+	std::mutex g_stateChangeHandlersLock;
+	std::vector<Console::MenuState::StateChangeHandler> g_stateChangeHandlers;
 
 	void NotifyStateChange(const bool isOpen) noexcept
 	{
-		const auto handler = g_stateChangeHandler.load();
-		if (handler == nullptr) {
+		std::scoped_lock lock(g_stateChangeHandlersLock);
+		if (g_stateChangeHandlers.empty()) {
 			return;
 		}
 
 		const auto* taskInterface = SKSE::GetTaskInterface();
 		if (taskInterface == nullptr) {
 			logs::warn(
-				"Console menu state changed, but its state-change handler could not be scheduled because the SKSE task interface is unavailable");
+				"Console menu state changed, but its state-change handlers could not be scheduled because the SKSE task interface is unavailable");
 			return;
 		}
 
-		taskInterface->AddTask([handler, isOpen] {
-			handler(isOpen);
-		});
+		for (const auto handler : g_stateChangeHandlers) {
+			if (handler != nullptr) {
+				taskInterface->AddTask([handler, isOpen] {
+					handler(isOpen);
+				});
+			}
+		}
 	}
 
 	class MenuEventSink final : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
@@ -69,7 +76,7 @@ namespace Console::MenuState
 		auto* ui = RE::UI::GetSingleton();
 		if (ui == nullptr) {
 			logs::warn(
-				"Console menu state initialization could not register open/close events because RE::UI is not available yet");
+				"Console menu state initialization could not register open/close events because RE::UI is unavailable");
 			return;
 		}
 
@@ -78,9 +85,27 @@ namespace Console::MenuState
 		g_menuEventSinkRegistered = true;
 	}
 
-	void SetStateChangeHandler(const StateChangeHandler handler) noexcept
+	void AddStateChangeHandler(const StateChangeHandler handler) noexcept
 	{
-		g_stateChangeHandler = handler;
+		if (handler == nullptr) {
+			return;
+		}
+
+		try {
+			std::scoped_lock lock(g_stateChangeHandlersLock);
+			if (std::find(g_stateChangeHandlers.begin(), g_stateChangeHandlers.end(), handler) != g_stateChangeHandlers.end()) {
+				return;
+			}
+
+			g_stateChangeHandlers.push_back(handler);
+		} catch (const std::exception& exception) {
+			logs::warn("Console menu state handler could not be registered: {}", exception.what());
+			return;
+		} catch (...) {
+			logs::warn("Console menu state handler could not be registered: unknown exception");
+			return;
+		}
+
 		Initialize();
 	}
 

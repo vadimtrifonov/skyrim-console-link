@@ -1,32 +1,40 @@
 # console-capture Specification
 
 ## Purpose
-Passive Skyrim VR console input and output capture for the initial debugging milestone.
+Passive console input and visible-output capture for supported Skyrim SE, AE, and VR runtimes.
 
 ## Requirements
-### Requirement: Plugin captures visible console output on Skyrim VR
-The system MUST passively capture visible console output on Skyrim VR and record it as `[console-out]`, reserving that `console-*` activity channel for output captured on the validated console seam without suppressing the original engine output.
+
+### Requirement: Plugin captures visible console output on Skyrim SE/AE/VR
+The system MUST passively capture visible console output on Skyrim SE/AE/VR, MUST record captured output as `[console-out]`, and MUST NOT suppress the original in-game console output.
 
 #### Scenario: Visible console line is mirrored
-- **WHEN** the game prints a visible console line through the validated VR console output seam
+- **WHEN** the game prints a visible console line
 - **THEN** the original line still appears in the in-game console
 - **AND** the plugin records that line as `[console-out]`
 
-### Requirement: Plugin captures accepted console input on Skyrim VR
-The system MUST passively capture accepted console input on Skyrim VR and record it as `[console-in]` after the validated callback returns, reserving that `console-*` activity channel for input captured on the validated console seam.
+### Requirement: Plugin captures accepted console input on Skyrim SE/AE/VR
+The system MUST passively capture manually accepted console input on Skyrim SE/AE/VR and MUST record captured input as `[console-in]` after the accepted command has been processed by the game.
 
 #### Scenario: Accepted command is mirrored
-- **WHEN** the validated VR `ExecuteCommand` callback accepts a console command
-- **THEN** the original command path still runs
-- **AND** the plugin records the accepted command as `[console-in]`
+- **WHEN** the user accepts a console command
+- **THEN** the original command is processed by the game
+- **AND** the plugin records the accepted command as `[console-in]` after that processing
 
-### Requirement: Capture uses only validated hook sites
-The system MUST install a capture hook only when the required hook site has been validated for the active runtime.
+#### Scenario: Submitted command is not duplicated as accepted input
+- **WHEN** the plugin submits a command to the in-game console
+- **THEN** that submitted command is not recorded as `[console-in]` solely because it was plugin-submitted
 
-#### Scenario: Hook site cannot be validated
-- **WHEN** the runtime is not Skyrim VR or the expected hook prologue does not match
-- **THEN** that capture hook is not installed
-- **AND** no capture records are emitted from that hook
+### Requirement: Capture is fail-closed when unavailable
+The system MUST NOT emit console capture records from an input or output capture surface that is unavailable for the active runtime or current console state.
+
+#### Scenario: Input capture is unavailable
+- **WHEN** input capture is unavailable
+- **THEN** no `[console-in]` records are emitted from input capture
+
+#### Scenario: Output capture is unavailable
+- **WHEN** output capture is unavailable
+- **THEN** no `[console-out]` records are emitted from output capture
 
 ### Requirement: Capture failures disable only the affected capture path
 The system MUST stop a capture path after a plugin-side failure without emitting further records from that path.

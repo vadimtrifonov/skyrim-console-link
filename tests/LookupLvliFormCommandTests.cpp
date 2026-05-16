@@ -68,6 +68,15 @@ namespace
 			"non-numeric limit should return usage");
 	}
 
+	void TestLookupLvliFormRejectsNonLocalFormID()
+	{
+		const auto result = LocalCommands::ExecuteLookupLvliFormCommand("Skyrim.esm|01000000", {});
+		Expect(result.size() == 1, "non-local form ID should return one response line");
+		Expect(
+			result.front() == "usage: cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]",
+			"non-local form ID should return usage");
+	}
+
 	void TestLookupLvliFormReportsMiss()
 	{
 		const auto result = LocalCommands::ExecuteLookupLvliFormCommand("Skyrim.esm|0003DF19", {});
@@ -256,6 +265,7 @@ void RunLookupLvliFormCommandTests()
 	TestLookupLvliFormRejectsMalformedKey();
 	TestLookupLvliFormRejectsZeroLimit();
 	TestLookupLvliFormRejectsNonNumericLimit();
+	TestLookupLvliFormRejectsNonLocalFormID();
 	TestLookupLvliFormReportsMiss();
 	TestLookupLvliFormReportsWrongType();
 	TestLookupLvliFormUsesDefaultLimitAndPreservesEntryOrder();

@@ -73,7 +73,7 @@ namespace
 		std::vector<LocalCommands::LookupPrefixMatch> matches;
 
 		const auto& [map, lock] = RE::TESForm::GetAllFormsByEditorID();
-		[[maybe_unused]] const RE::BSReadWriteLock guard{ lock };
+		const RE::BSReadLockGuard guard{ lock };
 		if (map == nullptr) {
 			return matches;
 		}

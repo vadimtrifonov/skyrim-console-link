@@ -40,6 +40,11 @@ The system MUST reject malformed `cdbg.lookup-lvli-form` usage with a readable l
 - **WHEN** the user submits `cdbg.lookup-lvli-form Skyrim.esm|0003DF19 nope`
 - **THEN** the plugin emits `usage: cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]`
 
+#### Scenario: Lookup-lvli-form key has a non-local form ID
+
+- **WHEN** the user submits `cdbg.lookup-lvli-form Skyrim.esm|01000000`
+- **THEN** the plugin emits `usage: cdbg.lookup-lvli-form <plugin>|<local-formid> [limit]`
+
 ### Requirement: Lookup-lvli-form distinguishes miss from wrong type
 
 The system MUST report a missing exact form separately from a resolved non-`LVLI` form.

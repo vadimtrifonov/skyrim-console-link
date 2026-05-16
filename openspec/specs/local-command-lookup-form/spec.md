@@ -35,6 +35,11 @@ The system MUST reject malformed `cdbg.lookup-form` usage with a readable local 
 - **WHEN** the user submits `cdbg.lookup-form Skyrim.esm|nothex`
 - **THEN** the plugin emits `usage: cdbg.lookup-form <plugin>|<local-formid>`
 
+#### Scenario: Lookup-form key has a non-local form ID
+
+- **WHEN** the user submits `cdbg.lookup-form Skyrim.esm|01000000`
+- **THEN** the plugin emits `usage: cdbg.lookup-form <plugin>|<local-formid>`
+
 ### Requirement: Lookup-form distinguishes miss from hit
 
 The system MUST report a missing exact form separately from a resolved form.

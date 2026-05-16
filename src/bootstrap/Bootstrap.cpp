@@ -10,8 +10,6 @@
 
 namespace
 {
-	constexpr std::size_t kConsoleTrampolineSize = 128;
-
 	std::string_view GetRuntimeName()
 	{
 		if (REL::Module::IsVR()) {
@@ -23,26 +21,20 @@ namespace
 		return "Skyrim SE";
 	}
 
-	void InitializeConsoleTrampoline(const Settings::Values& settings)
+	void InitializeOutputCaptureTrampoline(const Settings::Values& settings)
 	{
-		if (!REL::Module::IsVR()) {
-			logs::warn(
-				"ConsoleLink is currently scaffolding a VR-first implementation; runtime-specific hook sites are not verified for {} yet",
-				GetRuntimeName());
-			return;
-		}
-
-		if (!settings.enableConsoleInputLogging && !settings.enableConsoleOutputLogging) {
+		const auto requiredSize = Console::OutputCapture::RequiredTrampolineSize(settings);
+		if (requiredSize == 0) {
 			return;
 		}
 
 		try {
-			SKSE::AllocTrampoline(kConsoleTrampolineSize);
-			logs::info("Reserved {} bytes of shared trampoline space for console integration hooks", kConsoleTrampolineSize);
+			SKSE::AllocTrampoline(requiredSize);
+			logs::info("Reserved {} bytes of trampoline space for console output capture", requiredSize);
 		} catch (const std::exception& exception) {
-			logs::warn("Failed to reserve shared trampoline space for console integration hooks: {}", exception.what());
+			logs::warn("Failed to reserve trampoline space for console output capture: {}", exception.what());
 		} catch (...) {
-			logs::warn("Failed to reserve shared trampoline space for console integration hooks");
+			logs::warn("Failed to reserve trampoline space for console output capture");
 		}
 	}
 
@@ -107,9 +99,9 @@ namespace Bootstrap
 		if (const auto result = Logging::InitializeConsoleActivityLog(); !result) {
 			SKSE::stl::report_and_fail(result.error());
 		}
-		InitializeConsoleTrampoline(loadResult.settings);
+		InitializeOutputCaptureTrampoline(loadResult.settings);
 
-		Console::InputCapture::Install(loadResult.settings);
+		Console::InputCapture::Initialize(loadResult.settings);
 		Console::OutputCapture::Install(loadResult.settings);
 		Inbox::Initialize(loadResult.settings, inboxPath);
 	}

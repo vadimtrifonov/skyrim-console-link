@@ -4,5 +4,5 @@
 
 namespace Console::InputCapture
 {
-	void Install(const Settings::Values& settings);
+	void Initialize(const Settings::Values& settings);
 }

@@ -1,53 +1,143 @@
 #include "console/ConsoleInputCapture.h"
 
-#include "console/ExecuteCommandSeam.h"
+#include "console/ConsoleMenuState.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 
+#include "RE/C/Console.h"
+#include "RE/F/FxDelegate.h"
+#include "RE/F/FxDelegateArgs.h"
+#include "RE/U/UI.h"
+
 namespace
 {
-	std::atomic_bool g_captureDisabled = false;
+	using CallbackFn = RE::FxDelegateHandler::CallbackFn;
 
-	void OnAcceptedCommand(std::string_view command) noexcept
+	std::mutex g_originalExecuteCommandCallbackLock;
+	CallbackFn* g_originalExecuteCommandCallback = nullptr;
+
+	std::string TrimTrailingLineTerminators(std::string value)
 	{
-		if (command.empty() || g_captureDisabled.load()) {
-			return;
+		while (!value.empty() && (value.back() == '\r' || value.back() == '\n')) {
+			value.pop_back();
+		}
+		return value;
+	}
+
+	std::optional<std::string> ExtractCommandText(const RE::FxDelegateArgs& args)
+	{
+		if (args.GetArgCount() == 0) {
+			return std::nullopt;
 		}
 
+		const auto& value = args[0];
+		if (!value.IsString()) {
+			return std::nullopt;
+		}
+
+		const auto* command = value.GetString();
+		if (command == nullptr) {
+			return std::nullopt;
+		}
+
+		return TrimTrailingLineTerminators(command);
+	}
+
+	void CaptureExecuteCommandCallback(const RE::FxDelegateArgs& args)
+	{
+		std::string command;
 		try {
-			Logging::LogConsoleInputLine(command);
+			if (auto extracted = ExtractCommandText(args); extracted.has_value()) {
+				command = std::move(*extracted);
+			}
 		} catch (const std::exception& exception) {
-			g_captureDisabled = true;
-			logs::warn("Disabling passive console input capture after failure: {}", exception.what());
+			logs::warn("Skipping passive console input capture for this command after extraction failure: {}", exception.what());
 		} catch (...) {
-			g_captureDisabled = true;
-			logs::warn("Disabling passive console input capture after failure: unknown exception");
+			logs::warn("Skipping passive console input capture for this command after an unknown extraction failure");
+		}
+
+		CallbackFn* originalCallback = nullptr;
+		{
+			std::scoped_lock lock(g_originalExecuteCommandCallbackLock);
+			originalCallback = g_originalExecuteCommandCallback;
+		}
+		if (originalCallback == nullptr) {
+			SKSE::stl::report_and_fail("ConsoleLink input capture invariant failed: original ExecuteCommand callback is unavailable");
+		}
+
+		originalCallback(args);
+		if (!command.empty()) {
+			Logging::LogConsoleInputLine(command);
+		}
+	}
+
+	bool TryWrapActiveConsoleMenu() noexcept
+	{
+		auto* ui = RE::UI::GetSingleton();
+		if (ui == nullptr) {
+			logs::warn("Skipping passive console input capture: RE::UI is unavailable");
+			return false;
+		}
+
+		auto console = ui->GetMenu<RE::Console>();
+		if (!console) {
+			return false;
+		}
+
+		auto* delegate = console->fxDelegate.get();
+		if (delegate == nullptr) {
+			logs::warn("Skipping passive console input capture for the open console menu: FxDelegate is unavailable");
+			return false;
+		}
+
+		auto* callback = delegate->callbacks.GetAlt("ExecuteCommand");
+		if (callback == nullptr || callback->callback == nullptr) {
+			logs::warn("Skipping passive console input capture for the open console menu: ExecuteCommand callback is unavailable");
+			return false;
+		}
+
+		std::scoped_lock lock(g_originalExecuteCommandCallbackLock);
+		if (callback->callback == &CaptureExecuteCommandCallback) {
+			return true;
+		}
+
+		if (g_originalExecuteCommandCallback == nullptr) {
+			g_originalExecuteCommandCallback = callback->callback;
+		} else if (g_originalExecuteCommandCallback != callback->callback) {
+			logs::warn(
+				"Skipping passive console input capture for the open console menu: ExecuteCommand callback changed after ConsoleLink installed its wrapper");
+			return false;
+		}
+
+		callback->callback = &CaptureExecuteCommandCallback;
+		logs::info("Wrapped active console FxDelegate ExecuteCommand callback for passive input capture");
+		return true;
+	}
+
+	void OnMenuStateChange(const bool isOpen) noexcept
+	{
+		if (isOpen) {
+			static_cast<void>(TryWrapActiveConsoleMenu());
 		}
 	}
 }
 
 namespace Console::InputCapture
 {
-	void Install(const Settings::Values& settings)
+	void Initialize(const Settings::Values& settings)
 	{
-		static bool attempted = false;
-		if (attempted) {
+		static bool initialized = false;
+		if (initialized) {
 			return;
 		}
-		attempted = true;
+		initialized = true;
 
 		if (!settings.enableConsoleInputLogging) {
 			logs::info("Console input capture is disabled by settings");
 			return;
 		}
 
-		if (!REL::Module::IsVR()) {
-			logs::warn("Skipping passive console input capture: the ExecuteCommand seam is VR-only");
-			return;
-		}
-
-		if (!Console::ExecuteCommandSeam::InstallAcceptedCommandHook(&OnAcceptedCommand)) {
-			return;
-		}
+		Console::MenuState::AddStateChangeHandler(&OnMenuStateChange);
+		static_cast<void>(TryWrapActiveConsoleMenu());
 	}
 }

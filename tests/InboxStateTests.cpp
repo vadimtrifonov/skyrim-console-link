@@ -158,6 +158,21 @@ namespace
 		Expect(laterContents.readMode == Inbox::ReadMode::kRewrite, "later contents after empty replacement should still use rewrite ingestion");
 	}
 
+	void TestUtf8BomIsStrippedFromQueuedLine()
+	{
+		Inbox::State state;
+		state.ResetForNewSession();
+
+		const auto result = state.AppendChunk(
+			"\xEF\xBB\xBF"
+			"cdbg.lookup Gold001\n");
+		Expect(result.extractedCount == 1, "line with UTF-8 BOM should still queue one command");
+
+		const auto front = state.FrontLine();
+		Expect(front.has_value(), "line with UTF-8 BOM should be queued");
+		Expect(front->text == "cdbg.lookup Gold001", "UTF-8 BOM should be stripped from queued line text");
+	}
+
 	void TestRewriteAcceptsFinalLineWithoutTrailingNewline()
 	{
 		Inbox::State state;
@@ -405,6 +420,7 @@ void RunInboxStateTests()
 	TestMissingAfterReadinessMakesRecreatedFileRewriteInput();
 	TestRecreatedFileTreatsCurrentContentsAsNewInput();
 	TestEmptyRewriteWaitsForLaterContents();
+	TestUtf8BomIsStrippedFromQueuedLine();
 	TestRewriteAcceptsFinalLineWithoutTrailingNewline();
 	TestAppendAfterRewriteStartsAtAcceptedRewriteSize();
 	TestAcceptedPrefixMismatchStartsRewriteForSameIdentityGrowth();
