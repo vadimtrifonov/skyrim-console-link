@@ -1,0 +1,4 @@
+interface:
+  display_name: "Console Link Operation"
+  short_description: "Use logs, inbox, commands, and activity"
+  default_prompt: "Use $consolelink-operation to operate Console Link in Skyrim: find logs and inbox paths, send local or console commands, and read activity."
