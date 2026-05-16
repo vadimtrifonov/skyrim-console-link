@@ -1,6 +1,6 @@
 ---
 name: console-link
-description: Operate ConsoleLink in Skyrim. Use to find logs and inbox paths, send console and local commands, and read console activity.
+description: Operate Console Link in Skyrim. Use to find logs and inbox paths, send console and local commands, and read console activity.
 ---
 
 # Console Link
@@ -21,7 +21,7 @@ description: Operate ConsoleLink in Skyrim. Use to find logs and inbox paths, se
 - Default inbox path: `%USERPROFILE%\\Documents\\My Games\\<Skyrim VR|Skyrim Special Edition>\\SKSE\\ConsoleLink.inbox.txt`
 - If startup logs report a different inbox path, treat the logged resolved path as the source of truth.
 - The inbox is a live transport, not a backlog.
-- On startup, ConsoleLink clears pre-existing inbox contents once.
+- On startup, pre-existing inbox contents are cleared.
 - The inbox supports two write styles:
   - Appends: each command as a newline-terminated line.
   - Overwrites: the whole file as a complete command batch.

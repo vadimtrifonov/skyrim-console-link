@@ -96,7 +96,7 @@ namespace
 		const auto result = Settings::LoadSettingsWithDiagnostics(path);
 
 		Expect(result.settings.enableConsoleInputLogging, "malformed bool should fall back to default");
-		Expect(result.settings.maxInboxLinesPerTick == 4, "malformed inbox uint should fall back to default");
+		Expect(result.settings.maxInboxLinesPerTick == 1, "malformed inbox uint should fall back to default");
 		Expect(result.warnings.size() == 2, "expected malformed warnings");
 		std::filesystem::remove(path);
 	}

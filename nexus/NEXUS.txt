@@ -1,0 +1,119 @@
+Console Link is designed for external test loops: read [b]ConsoleLink.activity.log[/b], write commands to [b]ConsoleLink.inbox.txt[/b], and inspect the results. This is useful for LLM-assisted game testing, especially in Skyrim VR where in-game debugging workflows are limited.
+
+For agent-based workflows, the Console Link operation skill is provided as an optional download.
+
+[size=4][b]Runtime support[/b][/size]
+
+[list]
+[*][b]Skyrim VR 1.4.15[/b] - supported; extensively tested.
+[*][b]Skyrim SE 1.5.97[/b] - supported.
+[*][b]Skyrim AE 1.6.1170[/b] - supported; extensively tested.
+[/list]
+
+[size=4][b]Installation[/b][/size]
+
+Download and install like any other SKSE plugin.
+
+Requirements:
+
+[list]
+[*][b]Skyrim VR:[/b] [url=https://www.nexusmods.com/skyrimspecialedition/mods/30457]SKSEVR[/url] + [url=https://www.nexusmods.com/skyrimspecialedition/mods/58101]VR Address Library for SKSEVR[/url]
+[*][b]Skyrim SE/AE:[/b] [url=https://www.nexusmods.com/skyrimspecialedition/mods/30379]SKSE[/url] + [url=https://www.nexusmods.com/skyrimspecialedition/mods/32444]Address Library for SKSE Plugins[/url]
+[/list]
+
+[size=4][b]Activity log[/b][/size]
+
+Console Link writes [b]ConsoleLink.activity.log[/b] to the standard SKSE logs folder under Documents.
+
+It records:
+
+[list]
+[*][b]console-in[/b] - console commands entered in-game.
+[*][b]console-out[/b] - console output printed by the game.
+[*][b]console-submit[/b] - console commands submitted from the inbox.
+[*][b]local[/b] - plugin-side events, local command responses, readiness changes, and inbox status.
+[/list]
+
+[size=4][b]Inbox commands[/b][/size]
+
+The default inbox file is [b]ConsoleLink.inbox.txt[/b], co-located with [b]ConsoleLink.activity.log[/b].
+The inbox is a live command transport. On startup, Console Link clears existing inbox contents.
+
+[b]Input modes:[/b]
+
+[list]
+[*][b]Append:[/b] add newline-terminated command lines; each line is processed once.
+[*][b]Overwrite:[/b] replace the file; all lines are processed as a new batch.
+[/list]
+
+[b]Command types:[/b]
+
+[list]
+[*][b]Local:[/b] [b]cdbg.*[/b] commands are handled by the plugin instead of Skyrim's console.
+[*][b]Console:[/b] all other lines are submitted only while the in-game console is open; otherwise they are rejected, not queued.
+[/list]
+
+[size=4][b]Local commands[/b][/size]
+
+[list]
+[*][b]cdbg.lookup[/b] [i]EditorID[/i] - exact Editor ID lookup.
+[*][b]cdbg.lookup-prefix[/b] [i]prefix[/i] [i]limit[/i] - Editor ID prefix lookup. The limit argument is optional; default: [b]10[/b].
+[*][b]cdbg.lookup-form[/b] [i]plugin|local-formid[/i] - plugin-qualified local form lookup, for example [b]Skyrim.esm|0003DF19[/b].
+[*][b]cdbg.lookup-lvli[/b] [i]EditorID[/i] [i]limit[/i] - direct leveled-list inspection by Editor ID. The limit argument is optional; default: [b]10[/b].
+[*][b]cdbg.lookup-lvli-form[/b] [i]plugin|local-formid[/i] [i]limit[/i] - direct leveled-list inspection by plugin-qualified local form ID. The limit argument is optional; default: [b]10[/b].
+[/list]
+
+[size=4][b]Examples[/b][/size]
+
+[b]ConsoleLink.inbox.txt[/b]
+
+[spoiler]
+[code]
+player.getav stamina
+cdbg.lookup Gold001
+cdbg.lookup-prefix Gold 3
+cdbg.lookup-form Skyrim.esm|0000000F
+cdbg.lookup-form EnchantmentArtExtender.esl|000800
+cdbg.lookup-lvli LItemAntlersLarge50 2
+cdbg.lookup-lvli-form Skyrim.esm|0010FF77 2
+[/code]
+[/spoiler]
+
+[b]ConsoleLink.activity.log[/b]
+
+[spoiler]
+[code]
+[console-submit] player.getav stamina
+[console-out] GetActorValue: Stamina >> 98.00
+[local] cdbg.lookup Gold001
+[local] lookup "Gold001" -> hit form=0x0000000F type=FORM name="Gold" source="Skyrim.esm"
+[local] cdbg.lookup-prefix Gold 3
+[local] lookup-prefix "Gold" -> 32 match(es)
+[local] lookup-prefix match editorID="Gold001" form=0x0000000F type=FORM name="Gold" source="Skyrim.esm"
+[local] lookup-prefix match editorID="GoldAmuletAA" form=0x00091722 type=FORM source="Unofficial Skyrim Modders Patch.esp"
+[local] lookup-prefix match editorID="GoldAmuletDiamondAA" form=0x00091721 type=FORM source="Unofficial Skyrim Modders Patch.esp"
+[local] lookup-prefix "Gold" -> truncated to 3 of 32 match(es)
+[local] cdbg.lookup-form Skyrim.esm|0000000F
+[local] lookup-form "Skyrim.esm|0000000F" -> hit form=0x0000000F type=FORM editorID="" name="Gold" source="Skyrim.esm"
+[local] cdbg.lookup-form EnchantmentArtExtender.esl|000800
+[local] lookup-form "EnchantmentArtExtender.esl|000800" -> hit form=0xFE006800 type=FORM editorID="" source="EnchantmentArtExtender.esl"
+[local] cdbg.lookup-lvli LItemAntlersLarge50 2
+[local] lookup-lvli "LItemAntlersLarge50" -> hit form=0x0010FF77 entries=1 source="Skyrim.esm"
+[local] lookup-lvli entry level=1 count=1 form=0x0006BC0A type=FORM name="Large Antlers" source="unofficial skyrim special edition patch.esp"
+[local] cdbg.lookup-lvli-form Skyrim.esm|0010FF77 2
+[local] lookup-lvli-form "Skyrim.esm|0010FF77" -> hit form=0x0010FF77 editorID="" entries=1 source="Skyrim.esm"
+[local] lookup-lvli-form entry level=1 count=1 form=0x0006BC0A type=FORM name="Large Antlers" source="unofficial skyrim special edition patch.esp"
+[/code]
+[/spoiler]
+
+[size=4][b]Configuration[/b][/size]
+
+[code]
+Data/SKSE/Plugins/ConsoleLink.ini
+[/code]
+
+Options are documented in the INI.
+
+[size=4][b]Source[/b][/size]
+
+[url=https://github.com/vadimtrifonov/skyrim-console-link]GitHub[/url]

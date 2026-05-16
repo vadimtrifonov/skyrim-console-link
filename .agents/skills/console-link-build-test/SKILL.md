@@ -1,9 +1,9 @@
 ---
-name: consolelink-build-test
-description: Build, test, and verify ConsoleLink locally. Troubleshoot toolchain failures.
+name: console-link-build-test
+description: Build, test, and verify Console Link locally. Troubleshoot toolchain failures.
 ---
 
-# ConsoleLink Build/Test
+# Console Link Build/Test
 
 ## Setup
 

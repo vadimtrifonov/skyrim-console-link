@@ -22,8 +22,8 @@ end
 
 includes(commonlibvr_root)
 
-set_project("ConsoleLink")
-set_version("0.0.0")
+set_project("Console Link")
+set_version("1.0.0")
 set_license("Apache-2.0")
 set_languages("c++23")
 set_policy("package.requires_lock", true)
@@ -69,8 +69,8 @@ target("ConsoleLink")
     add_deps("commonlibsse-ng")
 
     add_rules("commonlibsse-ng.plugin", {
-        name = "ConsoleLink",
-        author = "ConsoleLink contributors",
+        name = "Console Link",
+        author = "Console Link contributors",
         description = "Skyrim console observability and command submission debug helper",
         options = {
             address_library = true,

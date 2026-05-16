@@ -1,9 +1,9 @@
 ---
-name: consolelink-deploy
-description: Package and deploy ConsoleLink to Mod Organizer 2.
+name: console-link-deploy
+description: Package and deploy Console Link to Mod Organizer 2.
 ---
 
-# ConsoleLink Deploy
+# Console Link Deploy
 
 ## Commands
 

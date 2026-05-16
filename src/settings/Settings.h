@@ -14,7 +14,7 @@ namespace Settings
 		bool enableInbox = true;
 
 		std::filesystem::path inboxPath = L"ConsoleLink.inbox.txt";
-		std::uint32_t maxInboxLinesPerTick = 4;
+		std::uint32_t maxInboxLinesPerTick = 1;
 	};
 
 	struct LoadResult

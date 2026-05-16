@@ -70,7 +70,7 @@ if ($OverwriteIni -or -not $targetIniExisted) {
 }
 
 if (-not $Quiet) {
-    Write-Host "Deployed ConsoleLink:" -ForegroundColor Cyan
+    Write-Host "Deployed Console Link:" -ForegroundColor Cyan
     Write-Host "  target:       $targetRootPath"
     Write-Host "  mode:         $Mode"
     Write-Host "  dll:          $targetDll"
