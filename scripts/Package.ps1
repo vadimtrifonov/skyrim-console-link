@@ -20,6 +20,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build.ps1"
 $xmakeFile = Join-Path $repoRoot "xmake.lua"
+$licenseFile = Join-Path $repoRoot "LICENSE"
 $pluginName = "ConsoleLink"
 $archiveStem = "Console Link"
 $buildRoot = Join-Path $repoRoot "build/windows/x64/$Mode"
@@ -81,6 +82,9 @@ $sourceIni = Join-Path $distRoot $iniFile
 if (-not (Test-Path -LiteralPath $sourceIni)) {
     throw "Missing tracked config template at '$sourceIni'."
 }
+if (-not (Test-Path -LiteralPath $licenseFile)) {
+    throw "Missing project license at '$licenseFile'."
+}
 
 if (-not $SkipBuild) {
     & $buildScript -Mode $Mode -Quiet:$Quiet -Reconfigure:$Reconfigure
@@ -109,6 +113,7 @@ New-Item -ItemType Directory -Path $stagePluginRoot -Force | Out-Null
 
 Copy-Item -LiteralPath $sourceDll -Destination (Join-Path $stagePluginRoot $pluginFile) -Force
 Copy-Item -LiteralPath $sourceIni -Destination (Join-Path $stagePluginRoot $iniFile) -Force
+Copy-Item -LiteralPath $licenseFile -Destination (Join-Path $stageModRoot "LICENSE") -Force
 
 if ($IncludePdb) {
     Copy-Item -LiteralPath $sourcePdb -Destination (Join-Path $stagePluginRoot $pdbFile) -Force

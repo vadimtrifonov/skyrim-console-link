@@ -21,7 +21,7 @@ namespace
 	};
 
 	// vr_address_tools marks ConsoleLog::VPrint as bit-for-bit identical for SE/VR.
-	// AE 1.6.1170 was live-disassembled before enabling this site.
+	// AE 1.6.1170 was live-disassembled; AE 1.7.104 was verified at Address Library ID 51110.
 	constexpr std::array<ValidatedOutputHookSite, 2> kVPrintHookSites{
 		ValidatedOutputHookSite{
 			.label = "SE/VR",
@@ -29,7 +29,7 @@ namespace
 				0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x40 },
 		},
 		ValidatedOutputHookSite{
-			.label = "AE 1.6.1170",
+			.label = "AE 1.6.1170/1.7.104",
 			.expectedPrologue = { 0x4C, 0x89, 0x44, 0x24, 0x18, 0x48, 0x89, 0x54,
 				0x24, 0x10, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54 },
 		},

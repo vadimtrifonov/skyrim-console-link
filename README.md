@@ -1,6 +1,6 @@
 # Console Link
 
-Console Link is a [CommonLibVR](https://github.com/alandtse/CommonLibVR) SKSE plugin for logging Skyrim console activity and submitting commands from an inbox file.
+Console Link is a [CommonLibSSE-NG](https://github.com/alandtse/CommonLibSSE-NG) SKSE plugin for logging Skyrim console activity and submitting commands from an inbox file.
 
 It is designed for external test loops: read `ConsoleLink.activity.log`, write commands to `ConsoleLink.inbox.txt`, and inspect the results.
 This is useful for LLM-assisted game testing, especially in Skyrim VR where in-game debugging workflows are limited.
@@ -14,6 +14,7 @@ The agent skill for operating Console Link is included at `.agents/skills/consol
 | Skyrim VR `1.4.15` | Supported; extensively tested |
 | Skyrim SE `1.5.97` | Supported |
 | Skyrim AE `1.6.1170` | Supported; extensively tested |
+| Skyrim AE `1.7.104` | Supported |
 
 ## Requirements
 

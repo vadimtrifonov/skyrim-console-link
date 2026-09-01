@@ -8,6 +8,7 @@ For agent-based workflows, the Console Link operation skill is provided as an op
 [*][b]Skyrim VR 1.4.15[/b] - supported; extensively tested.
 [*][b]Skyrim SE 1.5.97[/b] - supported.
 [*][b]Skyrim AE 1.6.1170[/b] - supported; extensively tested.
+[*][b]Skyrim AE 1.7.104[/b] - supported.
 [/list]
 
 [size=4][b]Installation[/b][/size]

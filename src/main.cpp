@@ -42,7 +42,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 		const auto logPath = InitializeLog();
 		logs::info("===== ConsoleLink start =====");
 		logs::info("Log file: {}", logPath.string());
-		SKSE::Init(a_skse);
+		// Initialize SKSE APIs without replacing the ConsoleLink.log logger configured above.
+		SKSE::Init(a_skse, false);
 		Bootstrap::Initialize();
 
 		logs::info("ConsoleLink loaded");

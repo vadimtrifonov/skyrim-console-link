@@ -17,7 +17,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $enterDevShell = Join-Path $PSScriptRoot "Enter-DevShell.ps1"
-$submodulePath = "lib/commonlibvr"
+$submodulePath = "lib/commonlibsse-ng"
 $submoduleRoot = Join-Path $repoRoot $submodulePath
 
 function Get-ExpectedCommonLibCommit
@@ -34,7 +34,7 @@ function Get-ExpectedCommonLibCommit
 
     $entry = & git -C $repoRoot ls-tree HEAD $submodulePath
     if (-not $entry) {
-        throw "Could not read the pinned CommonLibVR submodule entry from the index or HEAD."
+        throw "Could not read the pinned CommonLibSSE-NG submodule entry from the index or HEAD."
     }
 
     $parts = $entry -split '\s+'
@@ -48,23 +48,23 @@ function Get-ExpectedCommonLibCommit
 function Assert-CommonLibReady
 {
     if (-not (Test-Path -LiteralPath $submoduleRoot)) {
-        throw "CommonLibVR is missing at '$submoduleRoot'. Run 'git submodule update --init --recursive' from the repo root."
+        throw "CommonLibSSE-NG is missing at '$submoduleRoot'. Run 'git submodule update --init --recursive' from the repo root."
     }
 
     $commonLibXmake = Join-Path $submoduleRoot "xmake.lua"
     if (-not (Test-Path -LiteralPath $commonLibXmake)) {
-        throw "CommonLibVR at '$submoduleRoot' is incomplete. Expected xmake project at '$commonLibXmake'."
+        throw "CommonLibSSE-NG at '$submoduleRoot' is incomplete. Expected xmake project at '$commonLibXmake'."
     }
 
     $gitDir = Join-Path $submoduleRoot ".git"
     if (-not (Test-Path -LiteralPath $gitDir)) {
-        throw "CommonLibVR at '$submoduleRoot' is not initialized as a submodule. Run 'git submodule update --init --recursive' from the repo root."
+        throw "CommonLibSSE-NG at '$submoduleRoot' is not initialized as a submodule. Run 'git submodule update --init --recursive' from the repo root."
     }
 
     $expectedCommit = Get-ExpectedCommonLibCommit
     $actualCommit = (& git -C $submoduleRoot rev-parse HEAD).Trim()
     if ($actualCommit -ne $expectedCommit) {
-        throw "CommonLibVR at '$submoduleRoot' is at $actualCommit but the repo pins $expectedCommit. Sync the submodule before building."
+        throw "CommonLibSSE-NG at '$submoduleRoot' is at $actualCommit but the repo pins $expectedCommit. Sync the submodule before building."
     }
 
     return $submoduleRoot

@@ -5,26 +5,26 @@ add_defines(
     "WINVER=0x0A00"
 )
 
-local commonlibvr_root = path.absolute("lib/commonlibvr")
-if not os.isdir(commonlibvr_root) then
-    raise("CommonLibVR is missing at '" .. commonlibvr_root .. "'. Run 'git submodule update --init --recursive'.")
+local commonlibsse_ng_root = path.absolute("lib/commonlibsse-ng")
+if not os.isdir(commonlibsse_ng_root) then
+    raise("CommonLibSSE-NG is missing at '" .. commonlibsse_ng_root .. "'. Run 'git submodule update --init --recursive'.")
 end
 
-local commonlibvr_xmake = path.join(commonlibvr_root, "xmake.lua")
-if not os.isfile(commonlibvr_xmake) then
-    raise("CommonLibVR at '" .. commonlibvr_root .. "' is incomplete. Expected xmake project at '" .. commonlibvr_xmake .. "'.")
+local commonlibsse_ng_xmake = path.join(commonlibsse_ng_root, "xmake.lua")
+if not os.isfile(commonlibsse_ng_xmake) then
+    raise("CommonLibSSE-NG at '" .. commonlibsse_ng_root .. "' is incomplete. Expected xmake project at '" .. commonlibsse_ng_xmake .. "'.")
 end
 
-local openvr_header = path.join(commonlibvr_root, "extern/openvr/headers/openvr.h")
+local openvr_header = path.join(commonlibsse_ng_root, "extern/openvr/headers/openvr.h")
 if not os.isfile(openvr_header) then
-    raise("CommonLibVR at '" .. commonlibvr_root .. "' is incomplete. Expected nested OpenVR headers at '" .. openvr_header .. "'. Run 'git submodule update --init --recursive'.")
+    raise("CommonLibSSE-NG at '" .. commonlibsse_ng_root .. "' is incomplete. Expected nested OpenVR headers at '" .. openvr_header .. "'. Run 'git submodule update --init --recursive'.")
 end
 
-includes(commonlibvr_root)
+includes(commonlibsse_ng_root)
 
 set_project("Console Link")
 set_version("1.0.0")
-set_license("Apache-2.0")
+set_license("GPL-3.0-or-later")
 set_languages("c++23")
 set_policy("package.requires_lock", true)
 
