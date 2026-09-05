@@ -54,11 +54,67 @@ namespace
 		Expect(!state.HasPendingLines(), "not-ready inbox state should not queue content");
 	}
 
+	void TestFirstPollPreservesAppendLineBoundaries()
+	{
+		Inbox::State state;
+		const auto identity = MakeIdentity({ 26, 260, 2600 });
+		state.ResetForNewSession(identity);
+		const std::string partial = "first\nsecond";
+		const auto initialObservation = Inbox::FileObservation{
+			.identity = identity,
+			.size = partial.size(),
+			.lastWriteTime = 10,
+		};
+
+		const auto initial = state.ObserveFile(initialObservation);
+		Expect(initial.readMode == Inbox::ReadMode::kAppendCandidate, "first poll of the cleared file should use append ingestion");
+		const auto accepted = state.AppendObservedContents(initial.readOffset, partial);
+		Expect(accepted.extractedCount == 1, "first poll should accept only newline-terminated append lines");
+		Expect(accepted.pendingFragmentBytes == 6, "first poll should retain the partial append line");
+		const auto first = state.FrontLine();
+		Expect(first.has_value() && first->text == "first", "complete early append should be queued intact");
+		Expect(state.PopFrontLine(first->sequence), "complete early append should be consumable");
+		Expect(state.ObserveFile(initialObservation).readMode == Inbox::ReadMode::kNone, "unchanged partial append should not be reread");
+		Expect(!state.HasPendingLines(), "partial append must not be executed early");
+
+		const std::string completed = partial + "\n";
+		const auto grown = state.ObserveFile(Inbox::FileObservation{
+			.identity = identity,
+			.size = completed.size(),
+			.lastWriteTime = 11,
+		});
+		Expect(grown.readMode == Inbox::ReadMode::kAppendCandidate, "later newline should continue append ingestion");
+		Expect(state.AppendObservedContents(grown.readOffset, completed).extractedCount == 1, "later newline should complete the partial line");
+		const auto second = state.FrontLine();
+		Expect(second.has_value() && second->text == "second", "completed early fragment should be queued intact");
+	}
+
+	void TestFirstEmptyPollSeedsWriteTime()
+	{
+		Inbox::State state;
+		const auto identity = MakeIdentity({ 27, 270, 2700 });
+		state.ResetForNewSession(identity);
+		const auto empty = state.ObserveFile(Inbox::FileObservation{
+			.identity = identity,
+			.lastWriteTime = 10,
+		});
+		Expect(empty.readMode == Inbox::ReadMode::kNone, "first empty poll should not read contents");
+		Expect(empty.resetReason == Inbox::ResetReason::kNone, "initial write time should not be mistaken for an overwrite");
+
+		const auto appended = state.ObserveFile(Inbox::FileObservation{
+			.identity = identity,
+			.size = 7,
+			.lastWriteTime = 11,
+		});
+		Expect(appended.readMode == Inbox::ReadMode::kAppendCandidate, "growth after first empty poll should remain append input");
+		Expect(state.AppendObservedContents(appended.readOffset, "partial").extractedCount == 0, "partial append after empty poll should wait for a newline");
+	}
+
 	void TestReplacementTreatsCurrentContentsAsNewInput()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 2, 20, 200 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 3, 30, 300 });
 
 		Expect(state.ObserveFile(originalIdentity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before replacement");
@@ -76,8 +132,8 @@ namespace
 	void TestTruncationTreatsCurrentContentsAsNewInput()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 4, 40, 400 });
+		state.ResetForNewSession(identity);
 
 		Expect(state.ObserveFile(identity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before truncation coverage");
 		Expect(state.AppendChunk("one\ntwo\n").extractedCount == 2, "appended lines should queue after inbox readiness");
@@ -94,8 +150,8 @@ namespace
 	void TestMissingFileResetsState()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 5, 50, 500 });
+		state.ResetForNewSession(identity);
 
 		Expect(state.ObserveFile(identity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before removal coverage");
 		Expect(state.AppendChunk("cmd\n").extractedCount == 1, "appended line should queue before removal");
@@ -112,11 +168,12 @@ namespace
 	void TestMissingAfterReadinessMakesRecreatedFileRewriteInput()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
+		const auto originalIdentity = MakeIdentity({ 19, 190, 1900 });
 		const auto recreatedIdentity = MakeIdentity({ 20, 200, 2000 });
+		state.ResetForNewSession(originalIdentity);
 
 		const auto missing = state.ObserveMissingFile();
-		Expect(missing.resetReason == Inbox::ResetReason::kNone, "missing inbox before first tracked file should not log removal");
+		Expect(missing.resetReason == Inbox::ResetReason::kRemoved, "missing inbox before first poll should report removal of the cleared file");
 
 		const auto recreated = state.ObserveFile(recreatedIdentity, 9);
 		Expect(recreated.readMode == Inbox::ReadMode::kRewrite, "recreated inbox after readiness should use rewrite ingestion");
@@ -126,8 +183,8 @@ namespace
 	void TestRecreatedFileTreatsCurrentContentsAsNewInput()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 10, 100, 1000 });
+		state.ResetForNewSession(originalIdentity);
 		const auto recreatedIdentity = MakeIdentity({ 11, 110, 1100 });
 
 		Expect(state.ObserveFile(originalIdentity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before recreation coverage");
@@ -145,8 +202,8 @@ namespace
 	void TestEmptyRewriteWaitsForLaterContents()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 18, 180, 1800 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 19, 190, 1900 });
 
 		Expect(state.ObserveFile(originalIdentity, 4).readMode == Inbox::ReadMode::kAppendCandidate, "ready inbox should append initial contents from an empty cursor");
@@ -161,7 +218,7 @@ namespace
 	void TestUtf8BomIsStrippedFromQueuedLine()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
+		state.ResetForNewSession(MakeIdentity({ 1, 10, 100 }));
 
 		const auto result = state.AppendChunk(
 			"\xEF\xBB\xBF"
@@ -176,8 +233,8 @@ namespace
 	void TestRewriteAcceptsFinalLineWithoutTrailingNewline()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 12, 120, 1200 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 13, 130, 1300 });
 
 		Expect(state.ObserveFile(originalIdentity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should observe the empty file before replacement");
@@ -209,8 +266,8 @@ namespace
 	void TestAppendAfterRewriteStartsAtAcceptedRewriteSize()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 21, 210, 2100 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 22, 220, 2200 });
 		const std::string contents = "first";
 
@@ -236,8 +293,8 @@ namespace
 	void TestAcceptedPrefixMismatchStartsRewriteForSameIdentityGrowth()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 23, 230, 2300 });
+		state.ResetForNewSession(identity);
 		const std::string original = "cdbg.lookup-prefix CL_SHORT_3 1\n";
 		const std::string overwritten = "cdbg.lookup-prefix CL_LONG_OVERWRITE_20260503_4_EXTRA_LONG_MARKER 1\n";
 
@@ -256,8 +313,8 @@ namespace
 	void TestSameSizeOverwriteStartsRewriteWhenWriteTimeChanges()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 24, 240, 2400 });
+		state.ResetForNewSession(identity);
 		const auto originalObservation = Inbox::FileObservation{
 			.identity = identity,
 			.size = 0,
@@ -284,8 +341,8 @@ namespace
 		Inbox::State state(Inbox::StateLimits{
 			.maxPendingLines = 1,
 			.maxPendingFragmentBytes = static_cast<std::size_t>(8) * 1024 });
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 25, 250, 2500 });
+		state.ResetForNewSession(identity);
 		const std::string original = "old\n";
 		const std::string appended = "old\nnew\n";
 		const std::string overwritten = "replacement\n";
@@ -311,8 +368,8 @@ namespace
 	void TestAcceptedRewriteIsNotReplayedUntilAnotherRewrite()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 14, 140, 1400 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 15, 150, 1500 });
 		const auto laterReplacementIdentity = MakeIdentity({ 16, 160, 1600 });
 		const std::string contents = "same";
@@ -344,8 +401,8 @@ namespace
 		Inbox::State state(Inbox::StateLimits{
 			.maxPendingLines = 2,
 			.maxPendingFragmentBytes = static_cast<std::size_t>(8) * 1024 });
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 6, 60, 600 });
+		state.ResetForNewSession(identity);
 
 		Expect(state.ObserveFile(identity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before queue-cap coverage");
 		const auto appendResult = state.AppendChunk("a\nb\nc\n");
@@ -380,8 +437,8 @@ namespace
 		Inbox::State state(Inbox::StateLimits{
 			.maxPendingLines = 4,
 			.maxPendingFragmentBytes = 4 });
-		state.ResetForNewSession();
 		const auto identity = MakeIdentity({ 7, 70, 700 });
+		state.ResetForNewSession(identity);
 
 		Expect(state.ObserveFile(identity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before oversized-fragment coverage");
 		const auto appendResult = state.AppendChunk("abcde");
@@ -393,8 +450,8 @@ namespace
 	void TestStaleFrontSequenceDoesNotPopReplacementLine()
 	{
 		Inbox::State state;
-		state.ResetForNewSession();
 		const auto originalIdentity = MakeIdentity({ 8, 80, 800 });
+		state.ResetForNewSession(originalIdentity);
 		const auto replacementIdentity = MakeIdentity({ 9, 90, 900 });
 
 		Expect(state.ObserveFile(originalIdentity, 0).readMode == Inbox::ReadMode::kNone, "ready inbox should track the empty file before stale-sequence coverage");
@@ -414,6 +471,8 @@ void RunInboxStateTests()
 {
 	TestWorkerStartState();
 	TestNotReadyStateDoesNotReadInboxContents();
+	TestFirstPollPreservesAppendLineBoundaries();
+	TestFirstEmptyPollSeedsWriteTime();
 	TestReplacementTreatsCurrentContentsAsNewInput();
 	TestTruncationTreatsCurrentContentsAsNewInput();
 	TestMissingFileResetsState();

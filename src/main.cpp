@@ -1,5 +1,5 @@
-#include "bootstrap/Bootstrap.h"
 #include "pch.h"
+#include "plugin/Plugin.h"
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
@@ -44,7 +44,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 		logs::info("Log file: {}", logPath.string());
 		// Initialize SKSE APIs without replacing the ConsoleLink.log logger configured above.
 		SKSE::Init(a_skse, false);
-		Bootstrap::Initialize();
+		ConsoleLink::Plugin::Load();
 
 		logs::info("ConsoleLink loaded");
 		return true;

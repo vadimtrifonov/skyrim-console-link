@@ -1,15 +1,19 @@
-#include "bootstrap/Bootstrap.h"
+#include "plugin/Plugin.h"
 
 #include "console/ConsoleInputCapture.h"
 #include "console/ConsoleOutputCapture.h"
+#include "console_commands/ConsoleCommandProcessor.h"
 #include "inbox/InboxPath.h"
 #include "inbox/InputProcessor.h"
+#include "local_commands/LocalCommandProcessor.h"
 #include "logging/ConsoleActivityLog.h"
 #include "pch.h"
 #include "settings/Settings.h"
 
 namespace
 {
+	Settings::Values g_settings;
+
 	std::string_view GetRuntimeName()
 	{
 		if (REL::Module::IsVR()) {
@@ -79,11 +83,59 @@ namespace
 
 		return loadResult;
 	}
+
+	void OnDataLoaded()
+	{
+		logs::info("Initializing data-loaded services");
+
+		Console::InputCapture::Initialize(g_settings);
+
+		if (g_settings.enableInbox) {
+			ConsoleCommands::Initialize();
+			LocalCommands::Initialize();
+			Inbox::StartProcessing();
+		}
+
+		logs::info("Data-loaded services initialized");
+	}
+
+	void HandleMessage(SKSE::MessagingInterface::Message* message) noexcept
+	{
+		if (message == nullptr || message->type != SKSE::MessagingInterface::kDataLoaded) {
+			return;
+		}
+
+		try {
+			OnDataLoaded();
+		} catch (const std::exception& exception) {
+			try {
+				logs::critical("Failed to initialize data-loaded services: {}", exception.what());
+			} catch (...) {
+			}
+		} catch (...) {
+			try {
+				logs::critical("Failed to initialize data-loaded services: unknown exception");
+			} catch (...) {
+			}
+		}
+	}
+
+	void RegisterMessageListener()
+	{
+		const auto* messaging = SKSE::GetMessagingInterface();
+		if (messaging == nullptr) {
+			SKSE::stl::report_and_fail("Failed to obtain the SKSE messaging interface.");
+		}
+
+		if (!messaging->RegisterListener(HandleMessage)) {
+			SKSE::stl::report_and_fail("Failed to register the ConsoleLink SKSE messaging listener.");
+		}
+	}
 }
 
-namespace Bootstrap
+namespace ConsoleLink::Plugin
 {
-	void Initialize()
+	void Load()
 	{
 		logs::info("Initializing ConsoleLink on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
 
@@ -99,10 +151,12 @@ namespace Bootstrap
 		if (const auto result = Logging::InitializeConsoleActivityLog(); !result) {
 			SKSE::stl::report_and_fail(result.error());
 		}
-		InitializeOutputCaptureTrampoline(loadResult.settings);
 
-		Console::InputCapture::Initialize(loadResult.settings);
-		Console::OutputCapture::Install(loadResult.settings);
 		Inbox::Initialize(loadResult.settings, inboxPath);
+		g_settings = std::move(loadResult.settings);
+
+		RegisterMessageListener();
+		InitializeOutputCaptureTrampoline(g_settings);
+		Console::OutputCapture::Install(g_settings);
 	}
 }

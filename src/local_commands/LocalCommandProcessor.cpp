@@ -54,7 +54,6 @@ namespace
 	{
 		std::mutex lock;
 		bool ready = false;
-		bool initialized = false;
 	};
 
 	State& GetState()
@@ -62,8 +61,11 @@ namespace
 		static State state;
 		return state;
 	}
+}
 
-	void OnDataLoaded() noexcept
+namespace LocalCommands
+{
+	void Initialize() noexcept
 	{
 		auto& state = GetState();
 		{
@@ -75,46 +77,6 @@ namespace
 		}
 
 		Logging::LogLocalActivityLine("local commands are ready");
-	}
-
-	void MessageHandler(SKSE::MessagingInterface::Message* message)
-	{
-		if (message != nullptr && message->type == SKSE::MessagingInterface::kDataLoaded) {
-			OnDataLoaded();
-		}
-	}
-}
-
-namespace LocalCommands
-{
-	void Initialize() noexcept
-	{
-		auto& state = GetState();
-		{
-			std::scoped_lock lock(state.lock);
-			if (state.initialized) {
-				return;
-			}
-			state.initialized = true;
-		}
-
-		const auto* messaging = SKSE::GetMessagingInterface();
-		if (messaging == nullptr) {
-			try {
-				logs::warn("Local command processor could not register for kDataLoaded because SKSE messaging is unavailable");
-			} catch (...) {
-				SwallowFailSoftBoundary();
-			}
-			return;
-		}
-
-		if (!messaging->RegisterListener(MessageHandler)) {
-			try {
-				logs::warn("Local command processor could not register the SKSE messaging listener");
-			} catch (...) {
-				SwallowFailSoftBoundary();
-			}
-		}
 	}
 
 	bool IsLocalCommandLine(std::string_view line) noexcept

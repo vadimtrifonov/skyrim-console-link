@@ -1,5 +1,7 @@
 #pragma once
 
+#include "inbox/InboxFileObservation.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <string_view>
@@ -18,6 +20,7 @@ namespace Inbox
 	{
 		StartupClearResultKind kind = StartupClearResultKind::kEstablished;
 		std::uint32_t errorCode = 0;
+		FileIdentity identity{};
 	};
 
 	struct StartupClearAction

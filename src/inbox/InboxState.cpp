@@ -25,21 +25,21 @@ namespace Inbox
 		_maxPendingFragmentBytes(limits.maxPendingFragmentBytes)
 	{}
 
-	void State::ResetForNewSession() noexcept
+	void State::ResetForNewSession(const FileIdentity& clearedFileIdentity) noexcept
 	{
 		_pendingLines.clear();
 		_pendingFragment.clear();
 		_acceptedContents.clear();
+		_fileIdentity = clearedFileIdentity;
 		_fileCursor = 0;
 		_fileLastWriteTime = 0;
-		_trackingState = TrackingState::kReadyNoTrackedFile;
+		_trackingState = TrackingState::kReady;
 	}
 
 	UpdateResult State::ObserveMissingFile()
 	{
 		switch (_trackingState) {
-		case TrackingState::kReadyNoTrackedFile:
-			return EnterRewrite(ResetReason::kNone);
+		case TrackingState::kReady:
 		case TrackingState::kTrackingAppend:
 			return EnterRewrite(ResetReason::kRemoved);
 		case TrackingState::kNotReady:
@@ -58,17 +58,17 @@ namespace Inbox
 		case TrackingState::kNotReady:
 			return result;
 
-		case TrackingState::kReadyNoTrackedFile:
-			_fileIdentity = observation.identity;
-			_fileLastWriteTime = observation.lastWriteTime;
-			_trackingState = TrackingState::kTrackingAppend;
-			break;
-
 		case TrackingState::kRewritePending:
 			_fileIdentity = observation.identity;
 			result.readOffset = 0;
 			result.readMode = observation.size > 0 ? ReadMode::kRewrite : ReadMode::kNone;
 			return result;
+
+		case TrackingState::kReady:
+			// Seed the timestamp on the first poll, but retain the cleared file's identity.
+			_fileLastWriteTime = observation.lastWriteTime;
+			_trackingState = TrackingState::kTrackingAppend;
+			[[fallthrough]];
 
 		case TrackingState::kTrackingAppend:
 			if (!(observation.identity == _fileIdentity)) {

@@ -30,7 +30,7 @@ namespace Inbox
 	enum class TrackingState
 	{
 		kNotReady,
-		kReadyNoTrackedFile,
+		kReady,
 		kTrackingAppend,
 		kRewritePending
 	};
@@ -65,7 +65,7 @@ namespace Inbox
 	public:
 		explicit State(StateLimits limits = {});
 
-		void ResetForNewSession() noexcept;
+		void ResetForNewSession(const FileIdentity& clearedFileIdentity) noexcept;
 		[[nodiscard]] UpdateResult ObserveMissingFile();
 		[[nodiscard]] UpdateResult ObserveFile(const FileObservation& observation);
 		[[nodiscard]] UpdateResult ObserveFile(const FileIdentity& identity, std::uint64_t fileSize);

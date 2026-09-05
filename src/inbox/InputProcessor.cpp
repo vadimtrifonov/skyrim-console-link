@@ -105,18 +105,27 @@ namespace
 				return;
 			}
 
-			if (!settings.enableInbox) {
+			_settings = settings;
+			_inboxPath = inboxPath;
+
+			if (!_settings.enableInbox) {
 				logs::info("Inbox processing is disabled; inbox service will remain dormant");
 				return;
 			}
 
-			_settings = settings;
-			_inboxPath = inboxPath;
+			logs::info("Preparing inbox processing for '{}'", PathToString(_inboxPath));
+			EstablishInboxReadiness();
+		}
 
-			LocalCommands::Initialize();
-			ConsoleCommands::Initialize();
+		void StartProcessing()
+		{
+			if (!_initialized.load()) {
+				SKSE::stl::report_and_fail("ConsoleLink inbox invariant failed: processing cannot start before initialization");
+			}
+			if (!_settings.enableInbox || _serviceDisabled.load()) {
+				return;
+			}
 
-			logs::info("Inbox processing watching '{}'", PathToString(_inboxPath));
 			StartWorker();
 		}
 
@@ -131,9 +140,6 @@ namespace
 			try {
 				auto worker = std::jthread([this](const std::stop_token& stopToken) {
 					try {
-						if (!EstablishInboxReadiness()) {
-							return;
-						}
 						PollLoop(stopToken);
 					} catch (const std::exception& exception) {
 						DisableService("worker thread failure", exception.what());
@@ -152,23 +158,23 @@ namespace
 			}
 		}
 
-		[[nodiscard]] bool EstablishInboxReadiness()
+		void EstablishInboxReadiness()
 		{
 			const auto result = Inbox::ClearAtStartup(_inboxPath);
 			const auto action = Inbox::DescribeStartupClearResult(result);
 			if (!action.shouldProceed) {
-				return FailStartupInboxClear(action, result.errorCode);
+				FailStartupInboxClear(action, result.errorCode);
+				return;
 			}
 
 			ClearFileErrorState();
 
 			if (action.shouldResetState) {
 				std::scoped_lock lock(_stateLock);
-				_inboxState.ResetForNewSession();
+				_inboxState.ResetForNewSession(result.identity);
 			}
 
 			Logging::LogLocalActivityLine(action.localActivityLine);
-			return true;
 		}
 
 		void PollLoop(const std::stop_token& stopToken)
@@ -443,12 +449,11 @@ namespace
 				FormatWindowsError(errorCode));
 		}
 
-		[[nodiscard]] bool FailStartupInboxClear(const Inbox::StartupClearAction& action, DWORD errorCode)
+		void FailStartupInboxClear(const Inbox::StartupClearAction& action, DWORD errorCode)
 		{
 			ReportFileError(action.failedOperation, errorCode);
 			Logging::LogLocalActivityLine(action.localActivityLine);
 			DisableService("clear failure", action.disableReason);
-			return false;
 		}
 
 		void ClearFileErrorState()
@@ -481,5 +486,10 @@ namespace Inbox
 	void Initialize(const Settings::Values& settings, const std::filesystem::path& inboxPath)
 	{
 		InputProcessor::GetSingleton().Initialize(settings, inboxPath);
+	}
+
+	void StartProcessing()
+	{
+		InputProcessor::GetSingleton().StartProcessing();
 	}
 }

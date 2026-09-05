@@ -48,12 +48,12 @@ namespace Inbox
 			return { StartupClearResultKind::kFailedOpenOrCreate, ::GetLastError() };
 		}
 
-		LARGE_INTEGER fileSize{};
-		if (!::GetFileSizeEx(handle.get(), &fileSize)) {
+		BY_HANDLE_FILE_INFORMATION info{};
+		if (!::GetFileInformationByHandle(handle.get(), &info)) {
 			return { StartupClearResultKind::kFailedInspect, ::GetLastError() };
 		}
 
-		if (fileSize.QuadPart != 0) {
+		if (info.nFileSizeHigh != 0 || info.nFileSizeLow != 0) {
 			LARGE_INTEGER zero{};
 			if (!::SetFilePointerEx(handle.get(), zero, nullptr, FILE_BEGIN)) {
 				return { StartupClearResultKind::kFailedClear, ::GetLastError() };
@@ -64,7 +64,13 @@ namespace Inbox
 			}
 		}
 
-		return {};
+		return {
+			.identity = {
+				.volumeSerialNumber = info.dwVolumeSerialNumber,
+				.fileIndexHigh = info.nFileIndexHigh,
+				.fileIndexLow = info.nFileIndexLow,
+			},
+		};
 	}
 
 	StartupClearAction DescribeStartupClearResult(const StartupClearResult result) noexcept
@@ -86,7 +92,7 @@ namespace Inbox
 			return {
 				.localActivityLine = kStartupInboxClearFailureLine,
 				.disableReason = kStartupInboxClearFailureLine,
-				.failedOperation = "size",
+				.failedOperation = "observe",
 			};
 		case StartupClearResultKind::kFailedClear:
 			return {
