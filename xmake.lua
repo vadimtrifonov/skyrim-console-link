@@ -23,7 +23,7 @@ end
 includes(commonlibsse_ng_root)
 
 set_project("Console Link")
-set_version("1.0.0")
+set_version("1.1.0")
 set_license("GPL-3.0-or-later")
 set_languages("c++23")
 set_policy("package.requires_lock", true)
