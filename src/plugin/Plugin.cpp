@@ -25,15 +25,26 @@ namespace
 		return "Skyrim SE";
 	}
 
-	void InitializeOutputCaptureTrampoline(const Settings::Values& settings)
+	void InitializeSKSE(const SKSE::LoadInterface* skse, const Settings::Values& settings)
 	{
 		const auto requiredSize = Console::OutputCapture::RequiredTrampolineSize(settings);
+		// Keep the ConsoleLink.log logger configured by the entry point.
+		SKSE::Init(skse, SKSE::InitInfo{
+							 .log = false,
+							 .trampoline = requiredSize != 0,
+							 .trampolineSize = requiredSize,
+						 });
+
 		if (requiredSize == 0) {
 			return;
 		}
 
 		try {
-			SKSE::AllocTrampoline(requiredSize);
+			auto& trampoline = SKSE::GetTrampoline();
+			if (trampoline.capacity() == 0) {
+				// InitInfo does not allocate when the host lacks a trampoline interface.
+				trampoline.create(requiredSize);
+			}
 			logs::info("Reserved {} bytes of trampoline space for console output capture", requiredSize);
 		} catch (const std::exception& exception) {
 			logs::warn("Failed to reserve trampoline space for console output capture: {}", exception.what());
@@ -135,11 +146,12 @@ namespace
 
 namespace ConsoleLink::Plugin
 {
-	void Load()
+	void Load(const SKSE::LoadInterface* skse)
 	{
 		logs::info("Initializing ConsoleLink on {} runtime {}", GetRuntimeName(), REL::Module::get().version());
 
 		auto loadResult = LoadSettings();
+		InitializeSKSE(skse, loadResult.settings);
 		auto inboxPath = ResolvePath(loadResult.settings);
 
 		logs::info(
@@ -156,7 +168,6 @@ namespace ConsoleLink::Plugin
 		g_settings = std::move(loadResult.settings);
 
 		RegisterMessageListener();
-		InitializeOutputCaptureTrampoline(g_settings);
 		Console::OutputCapture::Install(g_settings);
 	}
 }

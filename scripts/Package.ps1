@@ -114,6 +114,7 @@ New-Item -ItemType Directory -Path $stagePluginRoot -Force | Out-Null
 Copy-Item -LiteralPath $sourceDll -Destination (Join-Path $stagePluginRoot $pluginFile) -Force
 Copy-Item -LiteralPath $sourceIni -Destination (Join-Path $stagePluginRoot $iniFile) -Force
 Copy-Item -LiteralPath $licenseFile -Destination (Join-Path $stageModRoot "LICENSE") -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "lib/commonlibsse-ng/licenses/LICENSE-hde64.txt") -Destination (Join-Path $stageModRoot "LICENSE-hde64.txt") -Force
 
 if ($IncludePdb) {
     Copy-Item -LiteralPath $sourcePdb -Destination (Join-Path $stagePluginRoot $pdbFile) -Force

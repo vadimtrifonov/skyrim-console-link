@@ -100,10 +100,7 @@ namespace
 		return "Skyrim SE";
 	}
 
-	void WriteAbsoluteJump(
-		const std::uintptr_t patchSiteAddress,
-		const std::uintptr_t jumpTargetAddress,
-		const std::size_t patchSize)
+	std::array<std::uint8_t, kVPrintHookSize> MakeAbsoluteJump(const std::uintptr_t jumpTargetAddress)
 	{
 		std::array<std::uint8_t, kVPrintHookSize> patch{};
 		patch.fill(0x90);
@@ -114,7 +111,7 @@ namespace
 		patch[4] = 0x00;
 		patch[5] = 0x00;
 		std::memcpy(patch.data() + 6, &jumpTargetAddress, sizeof(jumpTargetAddress));
-		REL::safe_write(patchSiteAddress, patch.data(), patchSize);
+		return patch;
 	}
 
 	std::string CaptureFormattedLine(const char* format, std::va_list args)
@@ -208,13 +205,16 @@ namespace Console::OutputCapture
 			auto* trampoline = static_cast<std::uint8_t*>(SKSE::GetTrampoline().allocate(kVPrintHookSize + kAbsoluteJumpSize));
 
 			std::memcpy(trampoline, actualBytes.data(), actualBytes.size());
-			WriteAbsoluteJump(
-				reinterpret_cast<std::uintptr_t>(trampoline) + kVPrintHookSize,
-				target.address() + kVPrintHookSize,
-				kAbsoluteJumpSize);
+			const auto returnJump = MakeAbsoluteJump(target.address() + kVPrintHookSize);
+			std::memcpy(trampoline + kVPrintHookSize, returnJump.data(), kAbsoluteJumpSize);
 
 			g_originalVPrint = reinterpret_cast<VPrint_t>(trampoline);
-			WriteAbsoluteJump(target.address(), reinterpret_cast<std::uintptr_t>(&HookedVPrint), kVPrintHookSize);
+			const auto patch = MakeAbsoluteJump(reinterpret_cast<std::uintptr_t>(&HookedVPrint));
+			if (!REL::safe_write(target.address(), patch.data(), patch.size(), hookSite->expectedPrologue)) {
+				g_originalVPrint = nullptr;
+				logs::warn("Skipping passive console output capture: ConsoleLog::VPrint prologue changed before patching at 0x{:X}", target.address());
+				return;
+			}
 
 			logs::info(
 				"Installed passive console output capture for {} at 0x{:X} with validated {} {}-byte ConsoleLog::VPrint prologue",
